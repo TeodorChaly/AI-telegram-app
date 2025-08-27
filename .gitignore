@@ -1,5 +1,6 @@
 .env
 runpod/workflow_api.json
+runpod/workflow_api_2.json
 agreed_users.json
 credits.json
 runpod/__pycache__

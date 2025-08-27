@@ -45,7 +45,7 @@ async def call_runpod_api(IMAGE_PATH, image_name, user_id=None):
     }
     time_start = time.time()
     print("User:", user_id, f"- Image {image_name} sended to runpod")
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=300) as session:
         try:
             async with session.post(URL, headers=headers, json=payload, timeout=300) as resp:
                 data = await resp.json()

@@ -13,7 +13,14 @@ from keyboards import main_menu, send_photo_menu, buy_credits_menu
 async def send_user_agreement(message: types.Message):
     await message.answer(
         "📜 *User Agreement*\n\n" +
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        """
+By using this bot, you agree to the following terms:
+1. You will not use this bot for any illegal activities.
+2. You will not attempt to hack or disrupt the bot's services.
+
+🎁 As a gift, you will receive 20 free credits upon agreeing to these terms.
+
+        """,
         reply_markup=get_user_agreement_keyboard(),
         parse_mode="Markdown"
     )
@@ -32,11 +39,20 @@ def register_handlers(dp: Dispatcher, bot: Bot):
     @dp.callback_query(lambda c: c.data == "agree")
     async def on_agree(callback: types.CallbackQuery, state: FSMContext):
         user_id = callback.from_user.id
-        user_agreed.add(user_id)
-        save_agreed_users(user_agreed)
+
+        if not is_user_agreed(user_id):
+            user_agreed.add(user_id)
+            # save_agreed_users(user_agreed)
+
+            # add_credits(user_id, 20)
+            await callback.message.answer("🎉 Thank you for agreeing! You have been credited with 20 free credits.")
+
         await state.set_state(UserStates.MAIN_MENU)
         await callback.message.edit_text("You agreed! ✅")
-        await callback.message.answer("Choose an option:", reply_markup=main_menu)
+        first_apear_text = """
+Click "📸 Send photo" to upload an image and I'll process it for you.
+"""
+        await callback.message.answer(first_apear_text, reply_markup=main_menu)
         await callback.answer()
 
     @dp.message()
