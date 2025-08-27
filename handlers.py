@@ -1,4 +1,5 @@
 import os
+import time
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 
@@ -8,6 +9,7 @@ from function import *
 from fsm_states import UserStates
 from runpod.call_runpod import call_runpod_api 
 from keyboards import main_menu, send_photo_menu, buy_credits_menu
+from logs import log_message
 
 
 async def send_user_agreement(message: types.Message):
@@ -42,9 +44,10 @@ def register_handlers(dp: Dispatcher, bot: Bot):
 
         if not is_user_agreed(user_id):
             user_agreed.add(user_id)
-            # save_agreed_users(user_agreed)
+            save_agreed_users(user_agreed)
+            await log_message("User agreed to the terms", user_id)
 
-            # add_credits(user_id, 20)
+            add_credits(user_id, 20)
             await callback.message.answer("🎉 Thank you for agreeing! You have been credited with 20 free credits.")
 
         await state.set_state(UserStates.MAIN_MENU)
@@ -76,6 +79,7 @@ Click "📸 Send photo" to upload an image and I'll process it for you.
         if message.text == "🛒 Buy credits" and current_state == UserStates.BUY_CREDITS.state:
             add_credits(user_id, 10)
             user_credits = get_user_credits(user_id)
+            await log_message(f"User bought 10 credits and has {user_credits} credits", user_id)
             await message.answer(f"🛒 You bought 10 credits! Now you have {user_credits} credits.")
             return
 
@@ -132,11 +136,16 @@ Click "📸 Send photo" to upload an image and I'll process it for you.
                 file_full_path = os.path.abspath(file_path)
                 file_name = file_path.replace("photos/", "")
 
+                time_start = time.time()
                 processed_image = await call_runpod_api(IMAGE_PATH=file_full_path, image_name=file_name, user_id=user_id)
+                end_time = time.time()
 
                 if processed_image is None:
                     await message.answer("❌ Error processing the image. Please try again later.")
+                    add_credits(user_id, 10)
                     return
+                
+                await log_message(f"Processed image in {end_time - time_start:.2f} seconds", user_id)
 
                 # Path to blurred image
                 blured_image = await blur_image(processed_image)
