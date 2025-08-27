@@ -1,17 +1,15 @@
-
 import asyncio
 import base64
 import json
 import os
 import time
+import aiohttp
 
 import aiohttp
 import requests
 
 from dotenv import load_dotenv
 load_dotenv()
-
-from logs import log_message
 
 API = os.getenv("API")
 server_id = os.getenv("SERVER_ID")
@@ -29,6 +27,7 @@ with open("runpod/workflow_api.json", "r", encoding="utf-8") as f:
 
 
 async def call_runpod_api(IMAGE_PATH, image_name, user_id=None):
+    # Читаем и кодируем изображение
     with open(IMAGE_PATH, "rb") as f:
         img_bytes = f.read()
     img_b64 = base64.b64encode(img_bytes).decode("utf-8")
@@ -44,16 +43,19 @@ async def call_runpod_api(IMAGE_PATH, image_name, user_id=None):
             ]
         }
     }
-    timeout = aiohttp.ClientTimeout(total=300)
-    await log_message(f"Image {image_name} sended to runpod", user_id)
-
+    time_start = time.time()
+    print("User:", user_id, f"- Image {image_name} sended to runpod")
+    timeout = aiohttp.ClientTimeout(total=300)  # таймаут в секундах
     async with aiohttp.ClientSession(timeout=timeout) as session:
         try:
-            async with session.post(URL, headers=headers, json=payload, timeout=timeout) as resp:
+            async with session.post(URL, headers=headers, json=payload, timeout=300) as resp:
                 data = await resp.json()
         except Exception as e:
-            await log_message(f"Crush error, {e}", user_id)
+            print("Ошибка запроса:", e)
             return
+
+    time_end = time.time()
+    print(f"User:", user_id, f"- Response time: {time_end - time_start:.2f} seconds")
 
     status = data.get("status", "UNKNOWN")
 
@@ -68,14 +70,12 @@ async def call_runpod_api(IMAGE_PATH, image_name, user_id=None):
 
                     save_dir = os.path.dirname(IMAGE_PATH)
                     filename = os.path.join(save_dir, f"{os.path.splitext(image_name)[0]}_naked.png")
-                    await log_message(f"Image {os.path.splitext(image_name)[0]}_naked.png processed", user_id)
 
                     with open(filename, "wb") as f:
                         f.write(img_bytes)
 
                     return filename
         else:
-            await log_message(f"Out of time", user_id)
             return None
 
 

@@ -1,78 +1,23 @@
 import asyncio
-import asyncio
 import json
 import random
 import string
 import os
 from PIL import Image, ImageFilter
-import os
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from aiogram.types import (
-    InlineKeyboardMarkup, InlineKeyboardButton, 
-    ReplyKeyboardMarkup, KeyboardButton, FSInputFile
-)
+# -------------------
+# CREDIT PACKAGES
+# -------------------
+CREDIT_PACKAGES = {
+    "pack_10": {"name": "10 credits", "price": 1},
+    "pack_50": {"name": "50 credits", "price": 4},
+    "pack_100": {"name": "100 credits", "price": 9},
+}
 
-async def save_photo(message, bot):
-    photo = message.photo[-1]
-    file_info = await bot.get_file(photo.file_id)
-    downloaded_file = await bot.download_file(file_info.file_path)
-
-    random_letters = ''.join(random.choices(string.ascii_lowercase, k=10))
-    filename = f"{message.from_user.id}_{random_letters}.jpg"
-
-    folder = "photos"
-
-    await asyncio.to_thread(os.makedirs, folder, exist_ok=True)
-
-    filepath = os.path.join(folder, filename)
-
-    def write_file():
-        with open(filepath, "wb") as f:
-            f.write(downloaded_file.read())
-
-    await asyncio.to_thread(write_file)
-
-    await message.reply(f"Photo saved successfully as {filename}!")
-
-    return filepath
-
-
-async def blur_image(filepath: str) -> str:
-    def _blur_sync(path):
-        image = Image.open(path)
-        blurred = image.filter(ImageFilter.GaussianBlur(radius=25))
-
-        folder, original_filename = os.path.split(path)
-        base, ext = os.path.splitext(original_filename)
-
-        new_filename = f"{base}_blured{ext}"
-        new_filepath = os.path.join(folder, new_filename)
-
-        blurred.save(new_filepath)
-        return new_filepath
-    # print(filepath)
-    new_filepath = await asyncio.to_thread(_blur_sync, filepath)
-    return new_filepath
-
-
-
-AGREED_USERS_FILE = "agreed_users.json"
-
-def load_agreed_users():
-    try:
-        with open(AGREED_USERS_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            return set(data)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return set()
-
-def save_agreed_users(users_set):
-    with open(AGREED_USERS_FILE, "w", encoding="utf-8") as f:
-        json.dump(list(users_set), f, ensure_ascii=False, indent=2)
-
-user_agreed = load_agreed_users()
-
-
+# -------------------
+# Credits system
+# -------------------
 CREDITS_FILE = "credits.json"
 
 def load_credits():
@@ -107,6 +52,64 @@ def spend_credits(user_id: int, amount: int) -> bool:
         return True
     return False
 
+# -------------------
+# Photo handling
+# -------------------
+async def save_photo(message, bot):
+    photo = message.photo[-1]
+    file_info = await bot.get_file(photo.file_id)
+    downloaded_file = await bot.download_file(file_info.file_path)
+
+    random_letters = ''.join(random.choices(string.ascii_lowercase, k=10))
+    filename = f"{message.from_user.id}_{random_letters}.jpg"
+
+    folder = "photos"
+    await asyncio.to_thread(os.makedirs, folder, exist_ok=True)
+    filepath = os.path.join(folder, filename)
+
+    def write_file():
+        with open(filepath, "wb") as f:
+            f.write(downloaded_file.read())
+
+    await asyncio.to_thread(write_file)
+    await message.reply(f"Photo saved successfully as {filename}!")
+    return filepath
+
+async def blur_image(filepath: str) -> str:
+    def _blur_sync(path):
+        image = Image.open(path)
+        blurred = image.filter(ImageFilter.GaussianBlur(radius=25))
+
+        folder, original_filename = os.path.split(path)
+        base, ext = os.path.splitext(original_filename)
+
+        new_filename = f"{base}_blured{ext}"
+        new_filepath = os.path.join(folder, new_filename)
+
+        blurred.save(new_filepath)
+        return new_filepath
+
+    new_filepath = await asyncio.to_thread(_blur_sync, filepath)
+    return new_filepath
+
+# -------------------
+# User agreements
+# -------------------
+AGREED_USERS_FILE = "agreed_users.json"
+
+def load_agreed_users():
+    try:
+        with open(AGREED_USERS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return set(data)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return set()
+
+def save_agreed_users(users_set):
+    with open(AGREED_USERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(list(users_set), f, ensure_ascii=False, indent=2)
+
+user_agreed = load_agreed_users()
 
 def is_user_agreed(user_id: int) -> bool:
     return user_id in user_agreed
