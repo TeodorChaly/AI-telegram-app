@@ -9,7 +9,7 @@ from redis.asyncio import Redis
 
 from dotenv import load_dotenv
 load_dotenv()
-from logs import *
+
 
 async def main():
     logging.basicConfig(level=logging.INFO)
@@ -22,8 +22,6 @@ async def main():
     
     bot = Bot(token=API_TOKEN)
     dp = Dispatcher(storage=storage)
-
-    await check_if_logs_exist()
 
     register_handlers(dp, bot)
 
