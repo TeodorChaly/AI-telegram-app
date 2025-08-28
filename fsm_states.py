@@ -5,3 +5,4 @@ class UserStates(StatesGroup):
     MAIN_MENU = State()
     SEND_PHOTO = State()
     BUY_CREDITS = State()
+    CHOOSE_PAYMENT = State()
