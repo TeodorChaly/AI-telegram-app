@@ -8,19 +8,56 @@ import json
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from PIL import Image, ImageFilter
 
 from function import *
 from fsm_states import UserStates
 from runpod.call_runpod import call_runpod_api
-from keyboards import main_menu, send_photo_menu, buy_credits_menu
-from payments_stars import router as payments_router, buy_credits_keyboard
+from payments_stars import router as payments_router, CREDIT_PACKAGES
 from logs import log_message
-from payments_crypto import register_crypto_handlers, buy_credits_crypto_keyboard
-
+from payments_crypto import register_crypto_handlers
 
 TEST_MODE = os.getenv("TEST_MODE", "True") == "True"
+
+# -------------------
+# KEYBOARDS
+# -------------------
+main_menu = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="📸 Send photo"), KeyboardButton(text="💳 Buy credits")],
+        [KeyboardButton(text="🌐 Language"), KeyboardButton(text="🛠 Support")]
+    ],
+    resize_keyboard=True
+)
+
+send_photo_menu = ReplyKeyboardMarkup(
+    keyboard=[[KeyboardButton(text="⬅️ Back to menu")]],
+    resize_keyboard=True
+)
+
+# Кнопки покупки кредитов через Crypto с отдельными Show credits
+crypto_credits_menu = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="💳 Buy credits"), KeyboardButton(text="💰 Show my credits")],
+        [KeyboardButton(text="⬅️ Back to menu")]
+    ],
+    resize_keyboard=True
+)
+
+def buy_credits_keyboard():
+    keyboard = ReplyKeyboardMarkup(keyboard=[], resize_keyboard=True)
+    for pkg_id, pkg in CREDIT_PACKAGES.items():
+        keyboard.add(KeyboardButton(text=pkg["name"]))
+    keyboard.add(KeyboardButton(text="⬅️ Back to menu"))
+    return keyboard
+
+def get_user_agreement_keyboard():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="✅ I agree (20 free credits)", callback_data="agree")]
+        ]
+    )
 
 # -------------------
 # USER AGREEMENT
@@ -43,11 +80,6 @@ def save_agreed_users(users_set):
 
 def is_user_agreed(user_id: int) -> bool:
     return user_id in user_agreed
-
-def get_user_agreement_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ I agree (20 free credits)", callback_data="agree")]
-    ])
 
 # -------------------
 # CREDITS SYSTEM
@@ -174,15 +206,11 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             await state.set_state(UserStates.BUY_CREDITS)
             await callback.message.answer("Select a package to buy:", reply_markup=buy_credits_keyboard())
         elif callback.data == "pay_crypto":
-            keyboard = buy_credits_crypto_keyboard()
-            await callback.message.answer(
-                "Выберите пакет для оплаты через CryptoBot:",
-                reply_markup=keyboard
-            )
-            await callback.answer()
+            await state.set_state(UserStates.BUY_CREDITS)
+            await callback.message.answer("Выберите действие через CryptoBot:", reply_markup=crypto_credits_menu)
+        await callback.answer()
 
-
-    # ===== PHOTO PROCESSING =====
+    # ===== GLOBAL HANDLER =====
     @dp.message()
     async def global_handler(message: types.Message, state: FSMContext):
         user_id = message.from_user.id
@@ -197,10 +225,16 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         if current_state is None:
             current_state = UserStates.MAIN_MENU.state
 
-        if message.text == "💰 Show my credits":
-            user_credits = get_user_credits(user_id)
-            await log_message(f"User checked credits: {user_credits}", user_id)
-            await message.answer(f"💰 You have {user_credits} credits.")
+        # ---------- Back to main menu ----------
+        if message.text == "⬅️ Back to menu":
+            await state.set_state(UserStates.MAIN_MENU)
+            await message.answer("🏠 Back to main menu. Choose an option:", reply_markup=main_menu)
+            return
+
+        # ---------- Main menu buttons ----------
+        if message.text == "📸 Send photo":
+            await state.set_state(UserStates.SEND_PHOTO)
+            await message.answer("Please upload a photo and I'll process it.", reply_markup=send_photo_menu)
             return
 
         if message.text == "💳 Buy credits":
@@ -213,11 +247,20 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             await message.answer("Choose payment method:", reply_markup=keyboard)
             return
 
-        if message.text == "📸 Send photo":
-            await state.set_state(UserStates.SEND_PHOTO)
-            await message.answer("Please upload a photo and I'll process it.", reply_markup=send_photo_menu)
+        if message.text == "💰 Show my credits":
+            user_credits = get_user_credits(user_id)
+            await message.answer(f"💰 You have {user_credits} credits.", reply_markup=main_menu)
             return
 
+        if message.text == "🌐 Language":
+            await message.answer("Скоро будет добавлено", reply_markup=main_menu)
+            return
+
+        if message.text == "🛠 Support":
+            await message.answer("Связаться с нами можно через gmail@help.com", reply_markup=main_menu)
+            return
+
+        # ---------- Photo processing ----------
         if message.photo and current_state == UserStates.SEND_PHOTO.state:
             user_credits = get_user_credits(user_id)
             if user_credits < 10:
