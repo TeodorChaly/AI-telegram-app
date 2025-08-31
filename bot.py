@@ -18,7 +18,7 @@ async def main():
     storage = RedisStorage(redis=redis)
     
     # import from .env file
-    API_TOKEN = os.getenv("API_TOKEN") 
+    API_TOKEN = os.getenv("TELEGRAM_API_TOKEN") 
     
     bot = Bot(token=API_TOKEN)
     dp = Dispatcher(storage=storage)

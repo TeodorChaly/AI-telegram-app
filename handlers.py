@@ -17,141 +17,13 @@ from runpod.call_runpod import call_runpod_api
 from payments_stars import router as payments_router, buy_credits_keyboard
 from logs import log_message
 from payments_crypto import register_crypto_handlers, buy_credits_crypto_keyboard
+from keyboards import *
+from dotenv import load_dotenv
+load_dotenv()
 
 TEST_MODE = os.getenv("TEST_MODE", "True") == "True"
 
-# -------------------
-# USER AGREEMENT
-# -------------------
-AGREED_USERS_FILE = "agreed_users.json"
-user_agreed = set()
-
-def load_agreed_users():
-    global user_agreed
-    try:
-        with open(AGREED_USERS_FILE, "r", encoding="utf-8") as f:
-            user_agreed = set(json.load(f))
-    except (FileNotFoundError, json.JSONDecodeError):
-        user_agreed = set()
-    return user_agreed
-
-def save_agreed_users(users_set):
-    with open(AGREED_USERS_FILE, "w", encoding="utf-8") as f:
-        json.dump(list(users_set), f, ensure_ascii=False, indent=2)
-
-def is_user_agreed(user_id: int) -> bool:
-    return user_id in user_agreed
-
-def get_user_agreement_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ I agree (20 free credits)", callback_data="agree")]
-    ])
-
-
-
-# -------------------
-# CREDITS SYSTEM
-# -------------------
-CREDITS_FILE = "credits.json"
-
-def load_credits():
-    if not os.path.exists(CREDITS_FILE):
-        return {}
-    try:
-        with open(CREDITS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except json.JSONDecodeError:
-        return {}
-
-def save_credits(credits_dict):
-    with open(CREDITS_FILE, "w", encoding="utf-8") as f:
-        json.dump(credits_dict, f, ensure_ascii=False, indent=2)
-
-credits = load_credits()
-
-def get_user_credits(user_id: int) -> int:
-    return credits.get(str(user_id), 0)
-
-def add_credits(user_id: int, amount: int):
-    uid = str(user_id)
-    credits[uid] = credits.get(uid, 0) + amount
-    save_credits(credits)
-
-def spend_credits(user_id: int, amount: int) -> bool:
-    uid = str(user_id)
-    current = credits.get(uid, 0)
-    if current >= amount:
-        credits[uid] = current - amount
-        save_credits(credits)
-        return True
-    return False
-
-# -------------------
-# PHOTO HANDLING
-# -------------------
-async def save_photo(message, bot):
-    photo = message.photo[-1]
-    file_info = await bot.get_file(photo.file_id)
-    downloaded_file = await bot.download_file(file_info.file_path)
-
-    random_letters = ''.join(random.choices(string.ascii_lowercase, k=10))
-    filename = f"{message.from_user.id}_{random_letters}.jpg"
-
-    folder = "photos"
-    await asyncio.to_thread(os.makedirs, folder, exist_ok=True)
-    filepath = os.path.join(folder, filename)
-
-    def write_file():
-        with open(filepath, "wb") as f:
-            f.write(downloaded_file.read())
-
-    await asyncio.to_thread(write_file)
-    return filepath
-
-async def blur_image(filepath: str) -> str:
-    def _blur_sync(path):
-        image = Image.open(path)
-        blurred = image.filter(ImageFilter.GaussianBlur(radius=25))
-        folder, original_filename = os.path.split(path)
-        base, ext = os.path.splitext(original_filename)
-        new_filename = f"{base}_blured{ext}"
-        new_filepath = os.path.join(folder, new_filename)
-        blurred.save(new_filepath)
-        return new_filepath
-
-    return await asyncio.to_thread(_blur_sync, filepath)
-
-# -------------------
-# MAIN MENU KEYBOARDS
-# -------------------
-main_menu = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="📸 Send photo"), KeyboardButton(text="💳 Buy credits")],
-        [KeyboardButton(text="🌐 Language"), KeyboardButton(text="💰 Show my credits")]
-    ],
-    resize_keyboard=True
-)
-
-send_photo_menu = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text="⬅️ Back to menu")]],
-    resize_keyboard=True
-)
-
-buy_credits_menu = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="🛒 Buy credits"), KeyboardButton(text="💰 Show my credits")],
-        [KeyboardButton(text="⬅️ Back to menu")]
-    ],
-    resize_keyboard=True
-)
-
-buy_credits_reply_menu = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="⭐ Pay stars"), KeyboardButton(text="💰 Pay crypto")],
-        [ KeyboardButton(text="⬅️ Back to menu")]
-    ],
-    resize_keyboard=True
-)
+channel_url = os.getenv("TELEGRAM_CHANEL_URL")
 
 # -------------------
 # HANDLERS
@@ -161,7 +33,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
     dp.include_router(payments_router)
     register_crypto_handlers(dp)
     load_agreed_users()
-
+        
     # ===== START =====
     @dp.message(Command("start"))
     async def start_handler(message: types.Message, state: FSMContext):
@@ -178,7 +50,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             "By using this bot, you agree to the following terms:\n"
             "1. You will not use this bot for any illegal activities.\n"
             "2. You will not attempt to hack or disrupt the bot's services.\n\n"
-            "🎁 As a gift, you will receive 20 free credits upon agreeing to these terms.",
+            "🎁 As a gift, you will receive 10 free credits upon agreeing to these terms.",
             reply_markup=get_user_agreement_keyboard(),
             parse_mode="Markdown"
         )
@@ -189,15 +61,38 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         if not is_user_agreed(user_id):
             user_agreed.add(user_id)
             save_agreed_users(user_agreed)
-            add_credits(user_id, 20)
-            await log_message("User agreed to the terms and received 20 credits", user_id)
-            await callback.message.answer("🎉 Thank you for agreeing! You have been credited with 20 free credits.")
+            add_credits(user_id, 10)
+            user = callback.from_user
+            print(1)
+            await log_message(
+                f"New user: "
+                f"{user.first_name} "
+                f"{user.last_name}, "
+                f"{user.username}, "
+                f"{user.language_code}",
+                user_id
+            )
+
+            await callback.message.answer("🎉 Thank you for agreeing! You have been credited with 10 free credits.")
+
         await state.set_state(UserStates.MAIN_MENU)
         await callback.message.edit_text("You agreed! ✅")
+
+        # await callback.message.answer(
+        #     'Click "📸 Send photo" to upload an image and I\'ll process it for you.',
+        #     reply_markup=main_menu
+        # )
+
+        subscribe_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Subscribe to channel", url=channel_url)],
+        [InlineKeyboardButton(text="Check status", callback_data="check_my_subsciptions")]
+        ])
+
         await callback.message.answer(
-            'Click "📸 Send photo" to upload an image and I\'ll process it for you.',
-            reply_markup=main_menu
+            "🎁 Get 10 credits by subscribing to our channel!",
+            reply_markup=subscribe_keyboard
         )
+
         await callback.answer()
 
     # ===== PAYMENT METHOD =====
@@ -213,6 +108,27 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 reply_markup=keyboard
             )
         await callback.answer()
+
+
+    # ===== CHECK CHANNEL STATUS =====
+    @dp.callback_query(lambda c: c.data == "check_my_subsciptions")
+    async def check_subscription_callback(callback: types.CallbackQuery):
+        user_id = callback.from_user.id
+        ID_CHANEL = os.getenv("TELEGRAM_ID_CHANEL")
+
+        try:
+            member = await callback.bot.get_chat_member(chat_id=ID_CHANEL, user_id=user_id)
+            if member.status in ["creator", "administrator", "member"]:
+                await callback.message.answer("Thanks you for your subsciption. You got 10 free credits!")
+                try:
+                    add_credits(user_id, 10)
+                    await callback.message.delete()
+                except Exception:
+                    pass  
+            else:
+                await callback.answer("You are not in the channel ❌", show_alert=True)
+        except Exception:
+            await callback.answer("You are not in the channel ❌", show_alert=True)
 
     # ===== GLOBAL HANDLER FOR TEXT BUTTONS =====
     @dp.message()
@@ -235,6 +151,11 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             await message.answer("🏠 Back to main menu. Choose an option:", reply_markup=main_menu)
             return
 
+        if message.text == "🌐 Language":
+            await log_message(f"Needs new language", user_id)
+            await message.answer("Coming soon...")
+            return
+
         # --------- Main menu actions ----------
         if message.text == "📸 Send photo":
             await state.set_state(UserStates.SEND_PHOTO)
@@ -243,11 +164,13 @@ def register_handlers(dp: Dispatcher, bot: Bot):
 
         if message.text == "💳 Buy credits":
             await state.set_state(UserStates.BUY_CREDITS)
+            await log_message(f"Looking to buy something, maybe...", user_id)
             await message.answer("💳 Choose a payment method:", reply_markup=buy_credits_reply_menu)
             return
         
         if message.text == "💰 Show my credits":
             user_credits = get_user_credits(user_id)
+            await log_message(f"User checked his credits {user_credits}", user_id)
             await message.answer(f"💰 You have {user_credits} credits.")
             return
         
@@ -258,14 +181,16 @@ def register_handlers(dp: Dispatcher, bot: Bot):
 
 
         if message.text == "⭐ Pay stars":
+            await log_message(f"User prefer stars", user_id)
             await state.set_state(UserStates.BUY_CREDITS)
             await message.answer("Select a package to buy:", reply_markup=buy_credits_keyboard())
             return
 
         if message.text == "💰 Pay crypto":
+            await log_message(f"User prefer crypto", user_id)
             crypto_menu = ReplyKeyboardMarkup(
                 keyboard=[
-                    [KeyboardButton(text="Pay USDT"), KeyboardButton(text="Pay USDC")],
+                    [KeyboardButton(text="Pay USDT 🟢"), KeyboardButton(text="Pay USDC 🔵")],
                     [KeyboardButton(text="⬅️ Back to payment methods")]
                 ],
                 resize_keyboard=True
@@ -277,14 +202,23 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             await state.set_state(UserStates.BUY_CREDITS)
             return
         
-        if message.text in ["Pay USDT", "Pay USDC"]:
-            currency = message.text.split()[1] 
-            keyboard = buy_credits_crypto_keyboard(currency=currency)
-            await message.answer(
-                f"Pay with {currency} via CryptoBot:",
-                reply_markup=keyboard
-            )
-            return
+        if message.text in ["Pay USDT 🟢", "Pay USDC 🔵"]:
+            if message.text.count("USDT") >= 1:
+                currency = "USDT"
+                keyboard = buy_credits_crypto_keyboard(currency=currency)
+                await message.answer(
+                    f"Pay with {currency} via CryptoBot:",
+                    reply_markup=keyboard
+                )
+                return
+            if message.text.count("USDC") >= 1:
+                currency = "USDC"
+                keyboard = buy_credits_crypto_keyboard(currency=currency)
+                await message.answer(
+                    f"Pay with {currency} via CryptoBot:",
+                    reply_markup=keyboard
+                )
+                return
         
 
         # --------- Photo processing ----------
@@ -297,8 +231,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             if not spend_credits(user_id, 10):
                 await message.answer("⚠️ Could not spend credits. Try again later.")
                 return
-
-            await message.answer("✅ Got your photo. Processing... 10 credits spent.")
+            await message.reply("✅ Got your photo. Processing... 10 credits spent.")
             file_path = await save_photo(message, bot)
             file_full_path = os.path.abspath(file_path)
             file_name = os.path.basename(file_path)
@@ -312,8 +245,8 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 add_credits(user_id, 10)
                 return
 
-            await log_message(f"Processed image in {time_end - time_start:.2f}s", user_id)
-            blured_image = await blur_image(processed_image)
-            await bot.send_photo(chat_id=message.chat.id, photo=FSInputFile(blured_image), caption="Here is your blurred image!")
-            os.remove(blured_image)
+            await log_message(f"Processed image {file_name} in {time_end - time_start:.2f}s", user_id)
+            # blured_image = await blur_image(processed_image)
+            # await bot.send_photo(chat_id=message.chat.id, photo=FSInputFile(blured_image), caption="Here is your blurred image!")
+            # os.remove(blured_image)
             await bot.send_photo(chat_id=message.chat.id, photo=FSInputFile(processed_image), caption="Here is your image!")

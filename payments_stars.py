@@ -2,19 +2,16 @@ import os
 from aiogram import Router, types
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, LabeledPrice
 from function import add_credits, get_user_credits  # only functions
+from config import PRODUCT_PRICE_STARS
 
 router = Router()
 
-TELEGRAM_STARS_TOKEN = os.getenv("API_TOKEN")
+TELEGRAM_STARS_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 if not TELEGRAM_STARS_TOKEN:
     raise ValueError("TELEGRAM_STARS_TOKEN is not set")
 
 # Credit packages
-CREDIT_PACKAGES = {
-    "pack_10": {"name": "10 credits", "price": 1, "credits": 10},
-    "pack_50": {"name": "50 credits", "price": 4, "credits": 50},
-    "pack_100": {"name": "100 credits", "price": 9, "credits": 100},
-}
+CREDIT_PACKAGES = PRODUCT_PRICE_STARS
 
 def buy_credits_keyboard() -> InlineKeyboardMarkup:
     """Create inline keyboard for buying credits"""

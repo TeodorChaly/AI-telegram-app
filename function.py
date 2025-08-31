@@ -7,15 +7,6 @@ from PIL import Image, ImageFilter
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # -------------------
-# CREDIT PACKAGES
-# -------------------
-CREDIT_PACKAGES = {
-    "pack_10": {"name": "10 credits", "price": 1},
-    "pack_50": {"name": "50 credits", "price": 4},
-    "pack_100": {"name": "100 credits", "price": 9},
-}
-
-# -------------------
 # Credits system
 # -------------------
 CREDITS_FILE = "credits.json"
@@ -72,7 +63,6 @@ async def save_photo(message, bot):
             f.write(downloaded_file.read())
 
     await asyncio.to_thread(write_file)
-    await message.reply(f"Photo saved successfully as {filename}!")
     return filepath
 
 async def blur_image(filepath: str) -> str:
@@ -116,5 +106,5 @@ def is_user_agreed(user_id: int) -> bool:
 
 def get_user_agreement_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ I agree (20 free credits)", callback_data="agree")]
+        [InlineKeyboardButton(text="✅ I agree (10 free credits)", callback_data="agree")]
     ])

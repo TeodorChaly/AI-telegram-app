@@ -4,7 +4,7 @@ from aiogram import Router, types
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from handlers import add_credits, get_user_credits
 from logs import log_message
-from config import PRODUCT_PRICE
+from config import PRODUCT_PRICE_CRYPTO
 
 router = Router()
 
@@ -12,7 +12,7 @@ API_TOKEN = os.getenv("TELEGRAM_PAYMENT_TOKEN_CRYPTO_BOT")
 if not API_TOKEN:
     raise ValueError("❌ TELEGRAM_PAYMENT_TOKEN_CRYPTO_BOT is missing in .env")
 
-CREDIT_PACKAGES_CRYPTO= PRODUCT_PRICE
+CREDIT_PACKAGES_CRYPTO= PRODUCT_PRICE_CRYPTO
 
 def buy_credits_crypto_keyboard(currency="USDC"):
     keyboard = []
