@@ -65,6 +65,54 @@ async def save_photo(message, bot):
     await asyncio.to_thread(write_file)
     return filepath
 
+async def save_document_as_image(message, bot) -> str:
+    file_info = await bot.get_file(message.document.file_id)
+    downloaded_file = await bot.download_file(file_info.file_path)
+
+    random_letters = ''.join(random.choices(string.ascii_lowercase, k=10))
+    filename = f"{message.from_user.id}_{random_letters}.jpg"
+
+    folder = "photos"
+    await asyncio.to_thread(os.makedirs, folder, exist_ok=True)
+    filepath = os.path.join(folder, filename)
+
+    def write_and_compress():
+        with open(filepath, "wb") as f:
+            f.write(downloaded_file.read())
+
+        img = Image.open(filepath).convert("RGB")
+        max_size = 1024
+        img.thumbnail((max_size, max_size))
+        img.save(filepath, "JPEG", quality=85)
+
+    await asyncio.to_thread(write_and_compress)
+    return filepath
+
+async def save_webp_as_jpg(file_id: str, bot, user_id: int) -> str:
+    file_info = await bot.get_file(file_id)
+    file_path = file_info.file_path
+
+    os.makedirs("photos", exist_ok=True)
+    random_letters = ''.join(random.choices(string.ascii_lowercase, k=10))
+    jpg_name = f"photos/{user_id}_{random_letters}.jpg"
+
+    downloaded_file = await bot.download_file(file_path)
+
+    def convert():
+        with open("temp.webp", "wb") as f:
+            f.write(downloaded_file.read())
+
+        img = Image.open("temp.webp").convert("RGB")
+        max_size = 1024
+        img.thumbnail((max_size, max_size))
+        img.save(jpg_name, "JPEG", quality=85)
+        os.remove("temp.webp")
+
+    await asyncio.to_thread(convert)
+    return jpg_name
+
+
+
 async def blur_image(filepath: str) -> str:
     def _blur_sync(path):
         image = Image.open(path)

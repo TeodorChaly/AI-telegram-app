@@ -2,6 +2,7 @@ import asyncio
 import base64
 import json
 import os
+import random
 import time
 import aiohttp
 
@@ -27,13 +28,13 @@ with open("runpod/workflow_api.json", "r", encoding="utf-8") as f:
 
 
 async def call_runpod_api(IMAGE_PATH, image_name, user_id=None):
-    # Читаем и кодируем изображение
     with open(IMAGE_PATH, "rb") as f:
         img_bytes = f.read()
     img_b64 = base64.b64encode(img_bytes).decode("utf-8")
     img_data_uri = f"data:image/jpeg;base64,{img_b64}"
 
     workflow["35"]["inputs"]["image"] = image_name
+    workflow["13"]["inputs"]["noise_seed"] = random.randint(1, 100000000)
     
     payload = {
         "input": {

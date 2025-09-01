@@ -29,11 +29,13 @@ channel_url = os.getenv("TELEGRAM_CHANEL_URL")
 # HANDLERS
 # -------------------
 
+
 def register_handlers(dp: Dispatcher, bot: Bot):
     dp.include_router(payments_router)
     register_crypto_handlers(dp)
     load_agreed_users()
-        
+    
+
     # ===== START =====
     @dp.message(Command("start"))
     async def start_handler(message: types.Message, state: FSMContext):
@@ -77,11 +79,6 @@ def register_handlers(dp: Dispatcher, bot: Bot):
 
         await state.set_state(UserStates.MAIN_MENU)
         await callback.message.edit_text("You agreed! ✅")
-
-        # await callback.message.answer(
-        #     'Click "📸 Send photo" to upload an image and I\'ll process it for you.',
-        #     reply_markup=main_menu
-        # )
 
         subscribe_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Subscribe to channel", url=channel_url)],
@@ -220,9 +217,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 )
                 return
         
-
-        # --------- Photo processing ----------
-        if message.photo and current_state == UserStates.SEND_PHOTO.state:
+        if message.sticker and current_state == UserStates.SEND_PHOTO.state:
             user_credits = get_user_credits(user_id)
             if user_credits < 10:
                 await message.answer("⚠️ You don't have enough credits (10 required).")
@@ -231,13 +226,18 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             if not spend_credits(user_id, 10):
                 await message.answer("⚠️ Could not spend credits. Try again later.")
                 return
-            await message.reply("✅ Got your photo. Processing... 10 credits spent.")
-            file_path = await save_photo(message, bot)
+
+            file_path = await save_webp_as_jpg(message.sticker.file_id, bot, message.from_user.id)
+
+            await message.reply("✅ Got your image. Processing... 10 credits spent.")
+            
             file_full_path = os.path.abspath(file_path)
             file_name = os.path.basename(file_path)
 
             time_start = time.time()
-            processed_image = await call_runpod_api(IMAGE_PATH=file_full_path, image_name=file_name, user_id=user_id)
+            processed_image = await call_runpod_api(
+                IMAGE_PATH=file_full_path, image_name=file_name, user_id=user_id
+            )
             time_end = time.time()
 
             if processed_image is None:
@@ -246,7 +246,55 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 return
 
             await log_message(f"Processed image {file_name} in {time_end - time_start:.2f}s", user_id)
-            # blured_image = await blur_image(processed_image)
-            # await bot.send_photo(chat_id=message.chat.id, photo=FSInputFile(blured_image), caption="Here is your blurred image!")
-            # os.remove(blured_image)
             await bot.send_photo(chat_id=message.chat.id, photo=FSInputFile(processed_image), caption="Here is your image!")
+        elif message.sticker and current_state != UserStates.SEND_PHOTO.state:
+            await message.answer("Please, go to '📸 Send photo' section")
+
+
+
+        # --------- Photo processing ----------
+        if (message.photo or message.document) and current_state == UserStates.SEND_PHOTO.state:
+            user_credits = get_user_credits(user_id)
+            if user_credits < 10:
+                await message.answer("⚠️ You don't have enough credits (10 required).")
+                return
+
+            if not spend_credits(user_id, 10):
+                await message.answer("⚠️ Could not spend credits. Try again later.")
+                return
+
+            await message.reply("✅ Got your image. Processing... 10 credits spent.")
+
+            if message.photo:
+                file_path = await save_photo(message, bot)
+            elif message.document:
+                mime_type = message.document.mime_type or ""
+                file_name = message.document.file_name.lower()
+                image_ext = (".png", ".jpg", ".jpeg", ".webp")
+
+                if mime_type.startswith("image/") or file_name.endswith(image_ext):
+                    file_path = await save_document_as_image(message, bot)
+                else:
+                    await message.answer("❌ This document is not an image.")
+                    return
+            else:
+                return
+
+            file_full_path = os.path.abspath(file_path)
+            file_name = os.path.basename(file_path)
+
+            time_start = time.time()
+            processed_image = await call_runpod_api(
+                IMAGE_PATH=file_full_path, image_name=file_name, user_id=user_id
+            )
+            time_end = time.time()
+
+            if processed_image is None:
+                await message.answer("❌ Error processing the image.")
+                add_credits(user_id, 10)
+                return
+
+            await log_message(f"Processed image {file_name} in {time_end - time_start:.2f}s", user_id)
+            await bot.send_photo(chat_id=message.chat.id, photo=FSInputFile(processed_image), caption="Here is your image!")
+        elif (message.photo or message.document) and current_state != UserStates.SEND_PHOTO.state:
+            await message.answer("Please, go to '📸 Send photo' section")
