@@ -27,7 +27,7 @@ buy_credits_menu = ReplyKeyboardMarkup(
 
 buy_credits_reply_menu = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="⭐ Pay stars"), KeyboardButton(text="💰 Pay crypto")],
+        [KeyboardButton(text="⭐ Pay stars"), KeyboardButton(text="💰 Pay crypto (🔥 -10%)")],
         [ KeyboardButton(text="⬅️ Back to menu")]
     ],
     resize_keyboard=True

@@ -154,5 +154,5 @@ def is_user_agreed(user_id: int) -> bool:
 
 def get_user_agreement_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ I agree (10 free credits)", callback_data="agree")]
+        [InlineKeyboardButton(text="✅ Agreed and accepted", callback_data="agree")]
     ])

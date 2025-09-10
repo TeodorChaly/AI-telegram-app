@@ -1,11 +1,23 @@
 PRODUCT_PRICE_CRYPTO= {
-    "crypto_100": {"credits": 100, "price": "0.1"},
-    "crypto_550": {"credits": 550, "price": "5"},
-    "crypto_1200": {"credits": 1200, "price": "10"}
+    "crypto_min": {"credits": 30, "price": "2"},
+    
+    "crypto_min_max": {"credits": 130, "price": "6"},
+    
+    "crypto_avg": {"credits": 330, "price": "13"},
+    
+    "crypto_max_min": {"credits": 750, "price": "22"},
+
+    "crypto_max": {"credits": 1500, "price": "35"}
 }
 
 PRODUCT_PRICE_STARS = {
-    "pack_10": {"name": "10 credits", "price": 1, "credits": 10},
-    "pack_50": {"name": "50 credits", "price": 4, "credits": 50},
-    "pack_100": {"name": "100 credits", "price": 9, "credits": 100},
+    "pack_min": {"name": "30 credits - 2$", "price": 100, "credits": 30},
+
+    "pack_min_max": {"name": "130 credits - 7$", "price": 350, "credits": 130},
+
+    "pack_avg": {"name": "330 credits - 14$", "price": 750, "credits": 330},
+
+    "pack_max_min": {"name": "750 credits - 25$", "price": 1500, "credits": 750},
+
+    "pack_max": {"name": "1500 credits - 40$", "price": 2500, "credits": 1500},
 }

@@ -10,13 +10,13 @@ TELEGRAM_STARS_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 if not TELEGRAM_STARS_TOKEN:
     raise ValueError("TELEGRAM_STARS_TOKEN is not set")
 
-# Credit packages
+
 CREDIT_PACKAGES = PRODUCT_PRICE_STARS
 
 def buy_credits_keyboard() -> InlineKeyboardMarkup:
     """Create inline keyboard for buying credits"""
     keyboard = [
-        [InlineKeyboardButton(text=f"{p['name']} - {p['price']} ⭐", callback_data=k)]
+        [InlineKeyboardButton(text=f"{p['name']}", callback_data=k)] # - {p['price']}
         for k, p in CREDIT_PACKAGES.items()
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)

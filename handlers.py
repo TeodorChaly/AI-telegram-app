@@ -14,6 +14,7 @@ from PIL import Image, ImageFilter
 from function import *
 from fsm_states import UserStates
 from runpod.call_runpod import call_runpod_api
+from runpod.call_runpod_video import call_runpod_api_video
 from payments_stars import router as payments_router, buy_credits_keyboard
 from logs import log_message
 from payments_crypto import register_crypto_handlers, buy_credits_crypto_keyboard
@@ -49,10 +50,12 @@ def register_handlers(dp: Dispatcher, bot: Bot):
     async def send_user_agreement(message: types.Message):
         await message.answer(
             "📜 *User Agreement*\n\n"
-            "By using this bot, you agree to the following terms:\n"
-            "1. You will not use this bot for any illegal activities.\n"
-            "2. You will not attempt to hack or disrupt the bot's services.\n\n"
-            "🎁 As a gift, you will receive 10 free credits upon agreeing to these terms.",
+            "By clicking on Accept, you automatically agree to all of the above terms and conditions:\n\n"
+            "1. You must be at least 18 years old to use this bot.\n"
+            "2. You cannot use other people’s photos without their permission.\n"
+            "3. The creation and distribution of content with minors is strictly prohibited.\n" 
+            "4. You must not generate or distribute illegal, obscene, or offensive content.\n" 
+            "5. All content that you generate must comply with local and international laws.\n",
             reply_markup=get_user_agreement_keyboard(),
             parse_mode="Markdown"
         )
@@ -75,7 +78,10 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 user_id
             )
 
-            await callback.message.answer("🎉 Thank you for agreeing! You have been credited with 10 free credits.")
+            await callback.message.answer(
+    "🎉 Welcome! You've received <b>5</b> free credits as a gift for your first registration.",
+    parse_mode="HTML"
+)
 
         await state.set_state(UserStates.MAIN_MENU)
         await callback.message.edit_text("You agreed! ✅")
@@ -86,8 +92,9 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         ])
 
         await callback.message.answer(
-            "🎁 Get 10 credits by subscribing to our channel!",
-            reply_markup=subscribe_keyboard
+            "🎁 <b>Get 5 additional credits</b> by subscribing to our channel!",
+            reply_markup=subscribe_keyboard,
+            parse_mode="HTML"
         )
 
         await callback.answer()
@@ -118,7 +125,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             if member.status in ["creator", "administrator", "member"]:
                 await callback.message.answer("Thanks you for your subsciption. You got 10 free credits!")
                 try:
-                    add_credits(user_id, 10)
+                    add_credits(user_id, 5)
                     await callback.message.delete()
                 except Exception:
                     pass  
@@ -183,7 +190,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             await message.answer("Select a package to buy:", reply_markup=buy_credits_keyboard())
             return
 
-        if message.text == "💰 Pay crypto":
+        if message.text == "💰 Pay crypto (🔥 -10%)":
             await log_message(f"User prefer crypto", user_id)
             crypto_menu = ReplyKeyboardMarkup(
                 keyboard=[
@@ -242,7 +249,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
 
             if processed_image is None:
                 await message.answer("❌ Error processing the image.")
-                add_credits(user_id, 10)
+                add_credits(user_id, 5)
                 return
 
             await log_message(f"Processed image {file_name} in {time_end - time_start:.2f}s", user_id)
@@ -287,6 +294,15 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             processed_image = await call_runpod_api(
                 IMAGE_PATH=file_full_path, image_name=file_name, user_id=user_id
             )
+            # processed_video = await call_runpod_api_video(
+            #     IMAGE_PATH=file_full_path, image_name=file_name, user_id=user_id
+            # )
+            # await bot.send_video(
+            #         chat_id=message.chat.id,
+            #         video=FSInputFile(processed_video),
+            #         caption="Here is your video!"
+            #     )
+            
             time_end = time.time()
 
             if processed_image is None:
