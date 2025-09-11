@@ -5,8 +5,10 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from handlers import add_credits, get_user_credits
 from logs import log_message
 from config import PRODUCT_PRICE_CRYPTO
+from stats.checker import *
 
 router = Router()
+
 
 API_TOKEN = os.getenv("TELEGRAM_PAYMENT_TOKEN_CRYPTO_BOT")
 if not API_TOKEN:
@@ -82,6 +84,11 @@ async def check_crypto_payment(callback: types.CallbackQuery):
             add_credits(callback.from_user.id, credits_amount)
             user_credits = get_user_credits(callback.from_user.id)
             await log_message(f"Crypto payment success: +{credits_amount} credits", callback.from_user.id)
+            payment = status['result']['items'][0]
+            paid_amount = float(payment['paid_amount'])
+
+            await add_value("bought_crypto")
+            await add_value("amount_stars", paid_amount)
 
             await callback.message.delete()
             await callback.message.answer(

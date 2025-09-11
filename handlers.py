@@ -1,4 +1,5 @@
 # handlers.py
+import math
 import os
 import time
 import asyncio
@@ -20,6 +21,7 @@ from logs import log_message
 from payments_crypto import register_crypto_handlers, buy_credits_crypto_keyboard
 from keyboards import *
 from dotenv import load_dotenv
+from stats.checker import *
 load_dotenv()
 
 TEST_MODE = os.getenv("TEST_MODE", "True") == "True"
@@ -68,7 +70,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             save_agreed_users(user_agreed)
             add_credits(user_id, 10)
             user = callback.from_user
-            print(1)
+            await add_value("new_users_today")
             await log_message(
                 f"New user: "
                 f"{user.first_name} "
@@ -123,9 +125,10 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         try:
             member = await callback.bot.get_chat_member(chat_id=ID_CHANEL, user_id=user_id)
             if member.status in ["creator", "administrator", "member"]:
-                await callback.message.answer("Thanks you for your subsciption. You got 10 free credits!")
+                await callback.message.answer("Thanks you for your subsciption. You got 5 free credits!")
                 try:
                     add_credits(user_id, 5)
+                    await add_value("subscribed")
                     await callback.message.delete()
                 except Exception:
                     pass  
@@ -156,6 +159,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             return
 
         if message.text == "🌐 Language":
+            await add_value("language")
             await log_message(f"Needs new language", user_id)
             await message.answer("Coming soon...")
             return
@@ -169,6 +173,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         if message.text == "💳 Buy credits":
             await state.set_state(UserStates.BUY_CREDITS)
             await log_message(f"Looking to buy something, maybe...", user_id)
+            await add_value("look_to_buy")
             await message.answer("💳 Choose a payment method:", reply_markup=buy_credits_reply_menu)
             return
         
@@ -186,11 +191,13 @@ def register_handlers(dp: Dispatcher, bot: Bot):
 
         if message.text == "⭐ Pay stars":
             await log_message(f"User prefer stars", user_id)
+            await add_value("look_to_buy_stars")
             await state.set_state(UserStates.BUY_CREDITS)
             await message.answer("Select a package to buy:", reply_markup=buy_credits_keyboard())
             return
 
         if message.text == "💰 Pay crypto (🔥 -10%)":
+            await add_value("look_to_buy_crypto")
             await log_message(f"User prefer crypto", user_id)
             crypto_menu = ReplyKeyboardMarkup(
                 keyboard=[
@@ -309,6 +316,9 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 await message.answer("❌ Error processing the image.")
                 add_credits(user_id, 10)
                 return
+
+            await add_value("sended_photo")
+            await add_value("processing_time", int(time_end - time_start))
 
             await log_message(f"Processed image {file_name} in {time_end - time_start:.2f}s", user_id)
             await bot.send_photo(chat_id=message.chat.id, photo=FSInputFile(processed_image), caption="Here is your image!")

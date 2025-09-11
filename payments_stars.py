@@ -3,6 +3,7 @@ from aiogram import Router, types
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, LabeledPrice
 from function import add_credits, get_user_credits  # only functions
 from config import PRODUCT_PRICE_STARS
+from stats.checker import *
 
 router = Router()
 
@@ -63,7 +64,9 @@ async def process_pre_checkout(query: types.PreCheckoutQuery):
         try:
             add_credits(query.from_user.id, package["credits"])
             new_balance = get_user_credits(query.from_user.id)
-
+            
+            await add_value("bought_stars")
+            await add_value("amount_crypto", package["price"])
             # notify the user about new balance
             await query.bot.send_message(
                 query.from_user.id,

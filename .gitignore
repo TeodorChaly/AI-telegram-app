@@ -7,3 +7,5 @@ runpod/__pycache__
 __pycache__
 photos/*
 logs.txt
+stats/stats.json
+.DS_Store
