@@ -12,7 +12,9 @@ load_dotenv(dotenv_path=env_path)
 NOTIFICATION_TOKEN = os.getenv("NOTIFICATION_TOKEN")
 NOTIFICATION_CHANNEL_ID = os.getenv("NOTIFICATION_CHANNEL_ID")
 
-file_path = "stats/stats.json"
+BASE_DIR = Path(__file__).parent 
+file_path = BASE_DIR / "stats.json"
+
 file_structure = {
         "new_users_today":0,
         "subscribed":0,
@@ -96,7 +98,5 @@ async def send_message(text):
     requests.post(url, data=payload)
 
 if __name__ == "__main__":
-
-    file_path = "stats.json"
     asyncio.run(main())
 

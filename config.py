@@ -1,5 +1,5 @@
 PRODUCT_PRICE_CRYPTO= {
-    "crypto_min": {"credits": 30, "price": "0.1"},
+    "crypto_min": {"credits": 30, "price": "2"},
     
     "crypto_min_max": {"credits": 130, "price": "6"},
     
@@ -11,8 +11,6 @@ PRODUCT_PRICE_CRYPTO= {
 }
 
 PRODUCT_PRICE_STARS = {
-    "pack_min_1": {"name": "30 credits - 2$", "price": 1, "credits": 30},
-
     "pack_min": {"name": "30 credits - 2$", "price": 100, "credits": 30},
 
     "pack_min_max": {"name": "130 credits - 7$", "price": 350, "credits": 130},

@@ -68,7 +68,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         if not is_user_agreed(user_id):
             user_agreed.add(user_id)
             save_agreed_users(user_agreed)
-            add_credits(user_id, 10)
+            add_credits(user_id, 5)
             user = callback.from_user
             await add_value("new_users_today")
             await log_message(
@@ -233,51 +233,26 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         
         if message.sticker and current_state == UserStates.SEND_PHOTO.state:
             user_credits = get_user_credits(user_id)
-            if user_credits < 10:
-                await message.answer("⚠️ You don't have enough credits (10 required).")
-                return
-
-            if not spend_credits(user_id, 10):
-                await message.answer("⚠️ Could not spend credits. Try again later.")
-                return
 
             file_path = await save_webp_as_jpg(message.sticker.file_id, bot, message.from_user.id)
 
-            await message.reply("✅ Got your image. Processing... 10 credits spent.")
-            
-            file_full_path = os.path.abspath(file_path)
-            file_name = os.path.basename(file_path)
-
-            time_start = time.time()
-            processed_image = await call_runpod_api(
-                IMAGE_PATH=file_full_path, image_name=file_name, user_id=user_id
+        
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="Photo (10 credits)", callback_data=f"process_photo:{file_path}")],
+                [InlineKeyboardButton(text="Video (20 credits) - New 🔥", callback_data=f"process_video:{file_path}")]
+            ])
+            await message.answer(
+                "Choose how you want to process the file:",
+                reply_markup=keyboard
             )
-            time_end = time.time()
 
-            if processed_image is None:
-                await message.answer("❌ Error processing the image.")
-                add_credits(user_id, 5)
-                return
-
-            await log_message(f"Processed image {file_name} in {time_end - time_start:.2f}s", user_id)
-            await bot.send_photo(chat_id=message.chat.id, photo=FSInputFile(processed_image), caption="Here is your image!")
         elif message.sticker and current_state != UserStates.SEND_PHOTO.state:
             await message.answer("Please, go to '📸 Send photo' section")
-
 
 
         # --------- Photo processing ----------
         if (message.photo or message.document) and current_state == UserStates.SEND_PHOTO.state:
             user_credits = get_user_credits(user_id)
-            if user_credits < 10:
-                await message.answer("⚠️ You don't have enough credits (10 required).")
-                return
-
-            if not spend_credits(user_id, 10):
-                await message.answer("⚠️ Could not spend credits. Try again later.")
-                return
-
-            await message.reply("✅ Got your image. Processing... 10 credits spent.")
 
             if message.photo:
                 file_path = await save_photo(message, bot)
@@ -294,33 +269,92 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             else:
                 return
 
-            file_full_path = os.path.abspath(file_path)
-            file_name = os.path.basename(file_path)
 
-            time_start = time.time()
-            processed_image = await call_runpod_api(
-                IMAGE_PATH=file_full_path, image_name=file_name, user_id=user_id
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="Photo (10 credits)", callback_data=f"process_photo:{file_path}")],
+                [InlineKeyboardButton(text="Video (20 credits) - New 🔥", callback_data=f"process_video:{file_path}")]
+            ])
+            await message.reply(
+"""✅ Got your image. Choose how you want to process the photo:""",
+                reply_markup=keyboard
             )
-            # processed_video = await call_runpod_api_video(
-            #     IMAGE_PATH=file_full_path, image_name=file_name, user_id=user_id
-            # )
-            # await bot.send_video(
-            #         chat_id=message.chat.id,
-            #         video=FSInputFile(processed_video),
-            #         caption="Here is your video!"
-            #     )
-            
-            time_end = time.time()
 
-            if processed_image is None:
-                await message.answer("❌ Error processing the image.")
-                add_credits(user_id, 10)
-                return
-
-            await add_value("sended_photo")
-            await add_value("processing_time", int(time_end - time_start))
-
-            await log_message(f"Processed image {file_name} in {time_end - time_start:.2f}s", user_id)
-            await bot.send_photo(chat_id=message.chat.id, photo=FSInputFile(processed_image), caption="Here is your image!")
         elif (message.photo or message.document) and current_state != UserStates.SEND_PHOTO.state:
             await message.answer("Please, go to '📸 Send photo' section")
+
+    @dp.callback_query(lambda c: c.data.startswith("process_"))
+    async def process_file_callback(callback: types.CallbackQuery):
+        user_id = callback.from_user.id
+        data = callback.data
+        action, file_path = data.split(":", 1) 
+
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass  
+
+        file_name = os.path.basename(file_path)
+        time_start = time.time()
+
+        if action == "process_photo":
+
+            user_credits = get_user_credits(user_id)
+            if user_credits < 10:
+                await callback.message.answer("⚠️ You don't have enough credits (10 required). \nYou can buy credits in '💳 Buy credits' section.")
+                await callback.answer()
+                return
+
+            if not spend_credits(user_id, 10):
+                await callback.message.answer("⚠️ Could not spend credits. Try again later.")
+                await callback.answer()
+                return
+            
+            
+
+            status_message = await callback.message.answer(
+    "✅ The process will take 30–40 seconds... 10 credits spent."
+)
+            processed_image = await call_runpod_api(IMAGE_PATH=file_path, image_name=file_name, user_id=user_id)
+
+            if processed_image:
+                try:
+                    await status_message.delete()
+                except Exception:
+                    pass
+                await bot.send_photo(chat_id=callback.message.chat.id, photo=FSInputFile(processed_image))
+            else:
+                try:
+                    await callback.message.delete()
+                except Exception:
+                    pass  
+                await callback.message.answer("❌ Error processing the image.")
+                add_credits(user_id, 10)
+
+        elif action == "process_video":
+            user_credits = get_user_credits(user_id)
+            if user_credits < 20:
+                await callback.message.answer("⚠️ You don't have enough credits (20 required). \nYou can buy credits in '💳 Buy credits' section.")
+                await callback.answer()
+                return
+
+            if not spend_credits(user_id, 20):
+                await callback.message.answer("⚠️ Could not spend credits. Try again later.")
+                await callback.answer()
+                return
+
+            status_message = await callback.message.answer("✅ The process will take 3-4 minutes... 20 credits spent.")
+            processed_video = await call_runpod_api_video(IMAGE_PATH=file_path, image_name=file_name, user_id=user_id)
+            if processed_video:
+                try:
+                    await status_message.delete()
+                except Exception:
+                    pass
+                await bot.send_video(chat_id=callback.message.chat.id, video=FSInputFile(processed_video))
+            else:
+                await callback.message.answer("❌ Error processing the video.")
+                add_credits(user_id, 20)
+
+        time_end = time.time()
+        await add_value("processing_time", int(time_end - time_start))
+        await add_value("sended_photo")
+        # await callback.answer()

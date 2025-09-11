@@ -8,8 +8,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-API = os.getenv("API")
-server_id = os.getenv("SERVER_ID")
+API = os.getenv("API_VIDEO")
+server_id = os.getenv("SERVER_ID_VIDEO")
+
 
 URL_RUN = f"https://api.runpod.ai/v2/{server_id}/run"
 URL_STATUS = f"https://api.runpod.ai/v2/{server_id}/status"
@@ -24,13 +25,12 @@ with open("runpod/workflow_api_video.json", "r", encoding="utf-8") as f:
 
 
 async def call_runpod_api_video(IMAGE_PATH, image_name, user_id=None):
-    # Читаем картинку
+    print(API, server_id)
     with open(IMAGE_PATH, "rb") as f:
         img_bytes = f.read()
     img_b64 = base64.b64encode(img_bytes).decode("utf-8")
     img_data_uri = f"data:image/jpeg;base64,{img_b64}"
 
-    # Вставляем в workflow
     workflow["122"]["inputs"]["image"] = image_name
     
     payload = {
@@ -51,7 +51,7 @@ async def call_runpod_api_video(IMAGE_PATH, image_name, user_id=None):
             start_data = await resp.json()
             job_id = start_data.get("id")
             if not job_id:
-                print("Не удалось получить job_id:", start_data)
+                print("Did't get job_id:", start_data)
                 return None
 
         while True:
