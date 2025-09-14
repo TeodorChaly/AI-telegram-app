@@ -12,6 +12,8 @@ load_dotenv(dotenv_path=env_path)
 NOTIFICATION_TOKEN = os.getenv("NOTIFICATION_TOKEN")
 NOTIFICATION_CHANNEL_ID = os.getenv("NOTIFICATION_CHANNEL_ID")
 
+TG_BOT_NAME = os.getenv("BOT_NAME")
+
 BASE_DIR = Path(__file__).parent 
 file_path = BASE_DIR / "stats.json"
 
@@ -19,6 +21,7 @@ file_structure = {
         "new_users_today":0,
         "subscribed":0,
         "sended_photo":0,
+        "sended_video":0,
         "processing_time":0,
         "look_to_buy":0,
         "look_to_buy_stars":0,
@@ -65,18 +68,23 @@ async def main():
 async def process_data(data):
     today = datetime.today().strftime("%d.%m.%Y")  
     if data["new_users_today"] != 0:
-        conversion_rate = ((data["bought_stars"] + data["bought_crypto"])/ data["new_users_today"])
-        conversion_rate_rounded = round(conversion_rate, 1)
+        conversion_rate = ((data["bought_stars"] + data["bought_crypto"])/data["new_users_today"])
+        conversion_rate_rounded = round(conversion_rate, 2)
+        conversion_rate_rounded = conversion_rate_rounded * 100
     else:
         conversion_rate_rounded = 0
 
         
     text_of_message = f"""
+Trom {TG_BOT_NAME}
+
 Stats for {today}
 New users: {data["new_users_today"]},
 Total subscribed to channel: {data["subscribed"]},
 Total photo sended: {data["sended_photo"]},
+Total video sended: {data["sended_video"]}
 Total processing time: {data["processing_time"]},
+
 
 People want to see pricing: {data["look_to_buy"]},
 People that choose stars: {data["look_to_buy_stars"]},
@@ -87,7 +95,7 @@ Bought stars (amount): {data["amount_stars"]},
 Bought crypto (amount): {data["amount_crypto"]},
 Wanted to change language: {data["language"]}
 
-Conversion rate - {conversion_rate_rounded}
+Conversion rate - {conversion_rate_rounded}%
 """
     await send_message(text_of_message)
 
