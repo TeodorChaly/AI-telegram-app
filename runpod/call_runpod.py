@@ -34,7 +34,7 @@ async def call_runpod_api(IMAGE_PATH, image_name, user_id=None):
     img_data_uri = f"data:image/jpeg;base64,{img_b64}"
 
     workflow["35"]["inputs"]["image"] = image_name
-    # workflow["13"]["inputs"]["noise_seed"] = random.randint(1, 100000000)
+    workflow["13"]["inputs"]["noise_seed"] = random.randint(1, 100000000)
     # workflow["19"]["inputs"]["steps"] = 40
     
     payload = {

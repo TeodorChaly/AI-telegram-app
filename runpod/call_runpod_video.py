@@ -5,6 +5,7 @@ import os
 import time
 import aiohttp
 from dotenv import load_dotenv
+import random
 
 load_dotenv()
 
@@ -23,23 +24,38 @@ headers = {
 with open("runpod/workflow_api_video.json", "r", encoding="utf-8") as f:
     workflow = json.load(f)
 
+with open("runpod/prompt_config.json", "r", encoding="utf-8") as f:
+    prompts = json.load(f)
 
-async def call_runpod_api_video(IMAGE_PATH, image_name, user_id=None):
-    print(API, server_id)
+async def call_runpod_api_video(IMAGE_PATH, image_name, user_id=None, effect=None):
     with open(IMAGE_PATH, "rb") as f:
         img_bytes = f.read()
+
     img_b64 = base64.b64encode(img_bytes).decode("utf-8")
     img_data_uri = f"data:image/jpeg;base64,{img_b64}"
 
-    workflow["122"]["inputs"]["image"] = image_name
+    if effect == "effect1":
+        workflow["6"]["inputs"]["text"] = prompts["effect1"]["text"]
+        workflow["141"]["inputs"]["lora_name"] = prompts["effect1"]["lora_name"]
+        workflow["142"]["inputs"]["lora_name"] = prompts["effect1"]["lora_name"]
     
+    if effect == "effect2":
+        workflow["6"]["inputs"]["text"] = prompts["effect2"]["text"]
+        workflow["141"]["inputs"]["lora_name"] = prompts["effect2"]["lora_name"]
+        workflow["142"]["inputs"]["lora_name"] = prompts["effect2"]["lora_name"]
+        
+
+    workflow["122"]["inputs"]["image"] = image_name
+    workflow["58"]["inputs"]["noise_seed"] = random.randint(1, 100000000)
+    workflow["57"]["inputs"]["noise_seed"] = random.randint(1, 100000000)
+        
     payload = {
-        "input": {
-            "workflow": workflow,
-            "images": [
-                {"name": image_name, "image": img_data_uri}
-            ]
-        }
+            "input": {
+                "workflow": workflow,
+                "images": [
+                    {"name": image_name, "image": img_data_uri}
+                ]
+            }
     }
 
     print("User:", user_id, f"- Image {image_name} sent to runpod")

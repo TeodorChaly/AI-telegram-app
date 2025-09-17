@@ -66,7 +66,7 @@ async def process_pre_checkout(query: types.PreCheckoutQuery):
             new_balance = get_user_credits(query.from_user.id)
             
             await add_value("bought_stars")
-            await add_value("amount_crypto", package["price"])
+            await add_value("amount_stars", package["price"])
             # notify the user about new balance
             await query.bot.send_message(
                 query.from_user.id,

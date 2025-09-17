@@ -22,6 +22,8 @@ from payments_crypto import register_crypto_handlers, buy_credits_crypto_keyboar
 from keyboards import *
 from dotenv import load_dotenv
 from stats.checker import *
+from aiogram.types import InputMediaVideo
+
 load_dotenv()
 
 TEST_MODE = os.getenv("TEST_MODE", "True") == "True"
@@ -100,6 +102,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         )
 
         await callback.answer()
+
 
     # ===== PAYMENT METHOD =====
     @dp.callback_query(lambda c: c.data in ["pay_stars", "pay_crypto"])
@@ -321,7 +324,19 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                     await status_message.delete()
                 except Exception:
                     pass
+
+                time_end = time.time()
+                await add_value("processing_time", int(time_end - time_start))
+                await add_value("sended_photo")
+
                 await bot.send_photo(chat_id=callback.message.chat.id, photo=FSInputFile(processed_image))
+
+                try:
+                    os.remove(processed_image)  
+                    os.remove(file_path)       
+                except Exception as e:
+                    print(f"Error while deleting: {e}")
+
             else:
                 try:
                     await callback.message.delete()
@@ -331,30 +346,63 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 add_credits(user_id, 10)
 
         elif action == "process_video":
-            user_credits = get_user_credits(user_id)
-            if user_credits < 20:
+
+            effects_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="Effect 1 🔥", callback_data=f"video_effect:effect1:{file_path}")],
+                [InlineKeyboardButton(text="Effect 2 ✨", callback_data=f"video_effect:effect2:{file_path}")]
+            ])
+            await callback.message.answer("Choose a video effect:", reply_markup=effects_keyboard)
+
+
+
+    @dp.callback_query(lambda c: c.data.startswith("video_effect:"))
+    async def process_video_effect(callback: types.CallbackQuery):
+        user_id = callback.from_user.id
+        _, effect_name, file_path = callback.data.split(":", 2)
+
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+
+        user_credits = get_user_credits(user_id)
+        if user_credits < 20:
                 await callback.message.answer("⚠️ You don't have enough credits (20 required). \nYou can buy credits in '💳 Buy credits' section.")
                 await callback.answer()
                 return
 
-            if not spend_credits(user_id, 20):
+        if not spend_credits(user_id, 20):
                 await callback.message.answer("⚠️ Could not spend credits. Try again later.")
                 await callback.answer()
                 return
+        
+        time_start = time.time()
 
-            status_message = await callback.message.answer("✅ The process will take 3-4 minutes... 20 credits spent.")
-            processed_video = await call_runpod_api_video(IMAGE_PATH=file_path, image_name=file_name, user_id=user_id)
-            if processed_video:
+        status_message = await callback.message.answer("✅ The process will take 3-4 minutes... 20 credits spent.")
+        processed_video = await call_runpod_api_video(
+            IMAGE_PATH=file_path,
+            image_name=os.path.basename(file_path),
+            user_id=user_id,
+            effect=effect_name 
+        )
+
+        if processed_video:
                 try:
                     await status_message.delete()
                 except Exception:
                     pass
+
+                time_end = time.time()
+                await add_value("processing_time", int(time_end - time_start))
+                await add_value("sended_video")
+
                 await bot.send_video(chat_id=callback.message.chat.id, video=FSInputFile(processed_video))
-            else:
+
+                try:
+                    os.remove(processed_video)  
+                    os.remove(file_path)       
+                except Exception as e:
+                    print(f"Error while deleting: {e}")
+        else:
                 await callback.message.answer("❌ Error processing the video.")
                 add_credits(user_id, 20)
-
-        time_end = time.time()
-        await add_value("processing_time", int(time_end - time_start))
-        await add_value("sended_photo")
-        # await callback.answer()
