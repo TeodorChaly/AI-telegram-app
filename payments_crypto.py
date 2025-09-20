@@ -88,7 +88,7 @@ async def check_crypto_payment(callback: types.CallbackQuery):
             paid_amount = float(payment['paid_amount'])
 
             await add_value("bought_crypto")
-            await add_value("amount_stars", paid_amount)
+            await add_value("amount_crypto", paid_amount)
 
             await callback.message.delete()
             await callback.message.answer(

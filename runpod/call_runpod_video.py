@@ -78,7 +78,7 @@ async def call_runpod_api_video(IMAGE_PATH, image_name, user_id=None, effect=Non
             }
     }
 
-    print("User:", user_id, f"- Image {image_name} sent to runpod")
+    print("User:", user_id, f"- Image {image_name} sent to runpod, {effect}")
     time_start = time.time()
 
     timeout = aiohttp.ClientTimeout(total=400) 

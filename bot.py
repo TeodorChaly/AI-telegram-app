@@ -8,6 +8,7 @@ from aiogram.fsm.storage.redis import RedisStorage
 from redis.asyncio import Redis
 
 from dotenv import load_dotenv
+from stats.checker import check_stats
 load_dotenv()
 
 
@@ -16,7 +17,8 @@ async def main():
 
     redis = Redis(host="localhost", port=6379, db=0) 
     storage = RedisStorage(redis=redis)
-    
+
+    await check_stats()
     # import from .env file
     API_TOKEN = os.getenv("TELEGRAM_API_TOKEN") 
     

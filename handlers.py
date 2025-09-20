@@ -101,6 +101,11 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             parse_mode="HTML"
         )
 
+        await callback.message.answer(
+            "You are ready to go! Below, you will find the bot control menu",
+            reply_markup=main_menu
+        )
+
         await callback.answer()
 
 
