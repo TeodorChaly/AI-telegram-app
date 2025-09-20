@@ -39,7 +39,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
     dp.include_router(payments_router)
     register_crypto_handlers(dp)
     load_agreed_users()
-    
+    user_video_messages = {}
 
     # ===== START =====
     @dp.message(Command("start"))
@@ -102,7 +102,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         )
 
         await callback.message.answer(
-            "You are ready to go! Below, you will find the bot control menu",
+            "You are ready to go! Below, you will find the bot control menu:",
             reply_markup=main_menu
         )
 
@@ -122,7 +122,6 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 reply_markup=keyboard
             )
         await callback.answer()
-
 
     # ===== CHECK CHANNEL STATUS =====
     @dp.callback_query(lambda c: c.data == "check_my_subsciptions")
@@ -356,13 +355,28 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 add_credits(user_id, 10)
 
         elif action == "process_video":
+
+            relative_path = "/Users/teodorcalijs/AI Work/Undressor-production"
+
+            media = [
+                InputMediaVideo(media=FSInputFile(relative_path+ "/telegram-bot/videos/undress_.mp4")),
+                InputMediaVideo(media=FSInputFile(relative_path+ "/telegram-bot/videos/clothe-off-trend.mp4")),
+                InputMediaVideo(media=FSInputFile(relative_path+ "/telegram-bot/videos/RIP_HER_CLOTH.mp4")),
+                InputMediaVideo(media=FSInputFile(relative_path+ "/telegram-bot/videos/touchboobies.mp4")),
+                InputMediaVideo(media=FSInputFile(relative_path+ "/telegram-bot/videos/TITTYDROP.mp4")),
+                InputMediaVideo(media=FSInputFile(relative_path+ "/telegram-bot/videos/breast_play.mp4")),
+            ]
+
+            sent_videos = await bot.send_media_group(chat_id=callback.from_user.id, media=media)
+            user_video_messages[user_id] = [m.message_id for m in sent_videos]
+
             
             effects_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Undress 🔥", callback_data=f"video_effect:effect1:{file_path}"), InlineKeyboardButton(text="Cloth off trend ✨", callback_data=f"video_effect:effect2:{file_path}")],
-                [InlineKeyboardButton(text="Rip her clothes 🔥", callback_data=f"video_effect:effect3:{file_path}"), InlineKeyboardButton(text="Boobs reveal (POV)✨", callback_data=f"video_effect:effect4:{file_path}")],
-                [InlineKeyboardButton(text="Titty drop 🔥", callback_data=f"video_effect:effect5:{file_path}"), InlineKeyboardButton(text="Breast play ✨", callback_data=f"video_effect:effect6:{file_path}")]
+                [InlineKeyboardButton(text="Undress 🔥", callback_data=f"video_effect:effect1:{file_path}"), InlineKeyboardButton(text="Cloth off trend 🔥", callback_data=f"video_effect:effect2:{file_path}")],
+                [InlineKeyboardButton(text="Rip her clothes", callback_data=f"video_effect:effect3:{file_path}"), InlineKeyboardButton(text="Touch Boobs", callback_data=f"video_effect:effect4:{file_path}")],
+                [InlineKeyboardButton(text="Titty drop", callback_data=f"video_effect:effect5:{file_path}"), InlineKeyboardButton(text="Breast play", callback_data=f"video_effect:effect6:{file_path}")]
             ])
-            await callback.message.answer("Choose a video effect:", reply_markup=effects_keyboard)
+            await callback.message.answer("Please select a video effect to apply to your photo:", reply_markup=effects_keyboard)
 
 
 
@@ -386,7 +400,15 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 await callback.message.answer("⚠️ Could not spend credits. Try again later.")
                 await callback.answer()
                 return
-        
+                
+        if user_id in user_video_messages:
+            for msg_id in user_video_messages[user_id]:
+                try:
+                    await bot.delete_message(chat_id=user_id, message_id=msg_id)
+                except Exception:
+                    pass
+            del user_video_messages[user_id]
+
         time_start = time.time()
 
         status_message = await callback.message.answer("✅ The process will take 3-4 minutes... 20 credits spent.")
