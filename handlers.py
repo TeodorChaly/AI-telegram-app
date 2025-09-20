@@ -341,15 +341,21 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 try:
                     await callback.message.delete()
                 except Exception:
-                    pass  
+                    pass 
+                
+                try:
+                    os.remove(file_path)       
+                except Exception as e:
+                    print(f"Error while deleting: {e}")
                 await callback.message.answer("❌ Error processing the image.")
                 add_credits(user_id, 10)
 
         elif action == "process_video":
-
+            
             effects_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Effect 1 🔥", callback_data=f"video_effect:effect1:{file_path}")],
-                [InlineKeyboardButton(text="Effect 2 ✨", callback_data=f"video_effect:effect2:{file_path}")]
+                [InlineKeyboardButton(text="Undress 🔥", callback_data=f"video_effect:effect1:{file_path}"), InlineKeyboardButton(text="Cloth off trend ✨", callback_data=f"video_effect:effect2:{file_path}")],
+                [InlineKeyboardButton(text="Rip her clothes 🔥", callback_data=f"video_effect:effect3:{file_path}"), InlineKeyboardButton(text="Boobs reveal (POV)✨", callback_data=f"video_effect:effect4:{file_path}")],
+                [InlineKeyboardButton(text="Titty drop 🔥", callback_data=f"video_effect:effect5:{file_path}"), InlineKeyboardButton(text="Breast play ✨", callback_data=f"video_effect:effect6:{file_path}")]
             ])
             await callback.message.answer("Choose a video effect:", reply_markup=effects_keyboard)
 
@@ -405,4 +411,8 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                     print(f"Error while deleting: {e}")
         else:
                 await callback.message.answer("❌ Error processing the video.")
+                try:
+                    os.remove(file_path)       
+                except Exception as e:
+                    print(f"Error while deleting: {e}")
                 add_credits(user_id, 20)
