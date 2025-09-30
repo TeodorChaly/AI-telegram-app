@@ -76,7 +76,7 @@ async def process_data(data):
 
         
     text_of_message = f"""
-Trom {TG_BOT_NAME}
+From {TG_BOT_NAME}
 
 Stats for {today}
 New users: {data["new_users_today"]},
@@ -104,6 +104,16 @@ async def send_message(text):
     url = f"https://api.telegram.org/bot{NOTIFICATION_TOKEN}/sendMessage"
     payload = {"chat_id": NOTIFICATION_CHANNEL_ID, "text": str(text)}
     requests.post(url, data=payload)
+
+
+
+async def purchase_notification(money):
+
+    url = f"https://api.telegram.org/bot{NOTIFICATION_TOKEN}/sendMessage"
+    payload = {"chat_id": NOTIFICATION_CHANNEL_ID, "text": str(money)}
+    requests.post(url, data=payload)
+
+
 
 if __name__ == "__main__":
     asyncio.run(main())

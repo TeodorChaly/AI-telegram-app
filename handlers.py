@@ -35,6 +35,7 @@ channel_url = os.getenv("TELEGRAM_CHANEL_URL")
 # -------------------
 
 
+
 def register_handlers(dp: Dispatcher, bot: Bot):
     dp.include_router(payments_router)
     register_crypto_handlers(dp)
@@ -45,6 +46,9 @@ def register_handlers(dp: Dispatcher, bot: Bot):
     @dp.message(Command("start"))
     async def start_handler(message: types.Message, state: FSMContext):
         user_id = message.from_user.id
+        chat_id = message.chat.id          
+
+        print(f"user_id: {user_id}, chat_id: {chat_id}")
         if is_user_agreed(user_id):
             await state.set_state(UserStates.MAIN_MENU)
             await message.answer("Welcome back! Choose an option:", reply_markup=main_menu)
@@ -356,15 +360,15 @@ def register_handlers(dp: Dispatcher, bot: Bot):
 
         elif action == "process_video":
 
-            relative_path = "/Users/teodorcalijs/AI Work/Undressor-production"
+            relative_path = os.getenv("RELATIVE_PATH")
 
             media = [
-                InputMediaVideo(media=FSInputFile(relative_path+ "/telegram-bot/videos/undress_.mp4")),
-                InputMediaVideo(media=FSInputFile(relative_path+ "/telegram-bot/videos/clothe-off-trend.mp4")),
-                InputMediaVideo(media=FSInputFile(relative_path+ "/telegram-bot/videos/RIP_HER_CLOTH.mp4")),
-                InputMediaVideo(media=FSInputFile(relative_path+ "/telegram-bot/videos/touchboobies.mp4")),
-                InputMediaVideo(media=FSInputFile(relative_path+ "/telegram-bot/videos/TITTYDROP.mp4")),
-                InputMediaVideo(media=FSInputFile(relative_path+ "/telegram-bot/videos/breast_play.mp4")),
+                InputMediaVideo(media=FSInputFile(relative_path+ "/videos/undress_.mp4")),
+                InputMediaVideo(media=FSInputFile(relative_path+ "/videos/clothe-off-trend.mp4")),
+                InputMediaVideo(media=FSInputFile(relative_path+ "/videos/RIP_HER_CLOTH.mp4")),
+                InputMediaVideo(media=FSInputFile(relative_path+ "/videos/touchboobies.mp4")),
+                InputMediaVideo(media=FSInputFile(relative_path+ "/videos/TITTYDROP.mp4")),
+                InputMediaVideo(media=FSInputFile(relative_path+ "/videos/breast_play.mp4")),
             ]
 
             sent_videos = await bot.send_media_group(chat_id=callback.from_user.id, media=media)

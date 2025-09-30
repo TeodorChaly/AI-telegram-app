@@ -63,6 +63,11 @@ async def process_pre_checkout(query: types.PreCheckoutQuery):
             
             await add_value("bought_stars")
             await add_value("amount_stars", package["price"])
+
+            purchase_notification = f"""
+STARS - {package["price"] * 0.013} usd ({package["price"]} stars)
+"""
+            await send_message(purchase_notification)
             
             # notify the user about new balance
             await query.bot.send_message(

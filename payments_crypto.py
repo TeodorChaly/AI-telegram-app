@@ -90,6 +90,11 @@ async def check_crypto_payment(callback: types.CallbackQuery):
             await add_value("bought_crypto")
             await add_value("amount_crypto", paid_amount)
 
+            purchase_notification = f"""
+CRYPTO - {paid_amount} usdc 
+"""
+            await send_message(purchase_notification)
+
             await callback.message.delete()
             await callback.message.answer(
                 f"✅ Payment successful! {credits_amount} credits have been added.\n"
