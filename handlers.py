@@ -88,11 +88,12 @@ def register_handlers(dp: Dispatcher, bot: Bot):
 
             await callback.message.answer(
     "🎉 Welcome! You've received <b>5</b> free credits as a gift for your first registration.",
-    parse_mode="HTML"
-)
+    parse_mode="HTML", reply_markup=main_menu
+    )
 
         await state.set_state(UserStates.MAIN_MENU)
         await callback.message.edit_text("You agreed! ✅")
+
 
         subscribe_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Subscribe to channel", url=channel_url)],
@@ -105,10 +106,6 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             parse_mode="HTML"
         )
 
-        await callback.message.answer(
-            "You are ready to go! Below, you will find the bot control menu:",
-            reply_markup=main_menu
-        )
 
         await callback.answer()
 
@@ -127,6 +124,30 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             )
         await callback.answer()
 
+
+
+    @dp.callback_query(lambda c: c.data == "subscribe_to_channel")
+    async def subscribe_to_channel_callback(callback: types.CallbackQuery):
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+
+        subscribe_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="Subscribe to channel", url=channel_url)],
+            [InlineKeyboardButton(text="Check status", callback_data="check_my_subsciptions")]
+        ])
+
+        await callback.message.answer(
+            "🎁 <b>Get 5 additional credits</b> by subscribing to our channel!",
+            reply_markup=subscribe_keyboard,
+            parse_mode="HTML"
+        )
+
+        await callback.answer()
+
+
+
     # ===== CHECK CHANNEL STATUS =====
     @dp.callback_query(lambda c: c.data == "check_my_subsciptions")
     async def check_subscription_callback(callback: types.CallbackQuery):
@@ -136,10 +157,15 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         try:
             member = await callback.bot.get_chat_member(chat_id=ID_CHANEL, user_id=user_id)
             if member.status in ["creator", "administrator", "member"]:
-                await callback.message.answer("Thanks you for your subsciption. You got 5 free credits!")
                 try:
-                    add_credits(user_id, 5)
-                    await add_value("subscribed")
+                    
+                    
+                    status = await save_subscribed_user(callback, user_id)
+                    if status:
+                        await callback.message.answer("Thanks you for your subsciption. You got 5 free credits!")
+                        add_credits(user_id, 5)
+                        await add_value("subscribed")
+
                     await callback.message.delete()
                 except Exception:
                     pass  
@@ -242,7 +268,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 )
                 return
         
-        if message.sticker and current_state == UserStates.SEND_PHOTO.state:
+        if message.sticker and current_state: # == UserStates.SEND_PHOTO.state
             user_credits = get_user_credits(user_id)
 
             file_path = await save_webp_as_jpg(message.sticker.file_id, bot, message.from_user.id)
@@ -257,12 +283,12 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 reply_markup=keyboard
             )
 
-        elif message.sticker and current_state != UserStates.SEND_PHOTO.state:
-            await message.answer("Please, go to '📸 Send photo' section")
+        # elif message.sticker and current_state != UserStates.SEND_PHOTO.state:
+        #     await message.answer("Please, go to '📸 Send photo' section 2")
 
 
         # --------- Photo processing ----------
-        if (message.photo or message.document) and current_state == UserStates.SEND_PHOTO.state:
+        if (message.photo or message.document): # and current_state == UserStates.SEND_PHOTO.state
             user_credits = get_user_credits(user_id)
 
             if message.photo:
@@ -290,8 +316,8 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 reply_markup=keyboard
             )
 
-        elif (message.photo or message.document) and current_state != UserStates.SEND_PHOTO.state:
-            await message.answer("Please, go to '📸 Send photo' section")
+        # elif (message.photo or message.document) and current_state != UserStates.SEND_PHOTO.state: 
+        #     await message.answer("Please, go to '📸 Send photo' section 1")
 
     @dp.callback_query(lambda c: c.data.startswith("process_"))
     async def process_file_callback(callback: types.CallbackQuery):
@@ -311,9 +337,58 @@ def register_handlers(dp: Dispatcher, bot: Bot):
 
             user_credits = get_user_credits(user_id)
             if user_credits < 10:
-                await callback.message.answer("⚠️ You don't have enough credits (10 required). \nYou can buy credits in '💳 Buy credits' section.")
-                await callback.answer()
-                return
+
+                if await is_user_subscribed(user_id) or await check_status(callback):
+                    print(True, "Without disscount")
+
+                    buy_credits_inline = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="💳 Buy credits", callback_data="pay_credits")]
+                    ])
+
+                    await callback.message.answer(
+                    f"⚠️ You don't have enough credits (10 required)."
+                    f"\nYour balance: <b>{user_credits}</b>",
+                    parse_mode="HTML",
+                    reply_markup=buy_credits_inline
+                    )
+
+                    await callback.answer()
+
+                    if user_id in user_video_messages:
+                        for msg_id in user_video_messages[user_id]:
+                            try:
+                                await bot.delete_message(chat_id=user_id, message_id=msg_id)
+                            except Exception:
+                                pass
+                        del user_video_messages[user_id]
+                    return
+                else:
+                    print(False, "With disscount")
+
+                    buy_credits_inline = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="💳 Buy credits", callback_data="pay_credits"),
+                     InlineKeyboardButton(text="Get free credits! ", callback_data="subscribe_to_channel")]
+                    ])
+
+                    await callback.message.answer(
+                    f"⚠️ You don't have enough credits (10 required)."
+                    f"\nYour balance: <b>{user_credits}</b>",
+                    parse_mode="HTML",
+                    reply_markup=buy_credits_inline
+                    )
+
+                    await callback.answer()
+
+                    if user_id in user_video_messages:
+                        for msg_id in user_video_messages[user_id]:
+                            try:
+                                await bot.delete_message(chat_id=user_id, message_id=msg_id)
+                            except Exception:
+                                pass
+                        del user_video_messages[user_id]
+                    return
+
+                
 
             if not spend_credits(user_id, 10):
                 await callback.message.answer("⚠️ Could not spend credits. Try again later.")
@@ -382,6 +457,19 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             ])
             await callback.message.answer("Please select a video effect to apply to your photo:", reply_markup=effects_keyboard)
 
+    @dp.callback_query(lambda c: c.data == "pay_credits")
+    async def pay_credits_callback(callback: types.CallbackQuery, state: FSMContext):
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+
+        await state.set_state(UserStates.BUY_CREDITS)
+        await callback.message.answer(
+            "💳 Choose a payment method:",
+            reply_markup=buy_credits_reply_menu
+        )
+        await callback.answer()
 
 
     @dp.callback_query(lambda c: c.data.startswith("video_effect:"))
@@ -396,8 +484,26 @@ def register_handlers(dp: Dispatcher, bot: Bot):
 
         user_credits = get_user_credits(user_id)
         if user_credits < 20:
-                await callback.message.answer("⚠️ You don't have enough credits (20 required). \nYou can buy credits in '💳 Buy credits' section.")
+                
+                buy_credits_inline = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="💳 Buy credits", callback_data="pay_credits")]
+                ])
+
+                await callback.message.answer(
+                    f"⚠️ You don't have enough credits (20 required)."
+                    f"\nYour balance: <b>{user_credits}</b>",
+                    parse_mode="HTML",
+                    reply_markup=buy_credits_inline
+                )
                 await callback.answer()
+
+                if user_id in user_video_messages:
+                    for msg_id in user_video_messages[user_id]:
+                        try:
+                            await bot.delete_message(chat_id=user_id, message_id=msg_id)
+                        except Exception:
+                            pass
+                    del user_video_messages[user_id]
                 return
 
         if not spend_credits(user_id, 20):

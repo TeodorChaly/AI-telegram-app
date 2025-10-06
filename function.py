@@ -5,6 +5,11 @@ import string
 import os
 from PIL import Image, ImageFilter
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from stats.checker import *
+from aiogram import types
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # -------------------
 # Credits system
@@ -156,3 +161,64 @@ def get_user_agreement_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="✅ Agreed and accepted", callback_data="agree")]
     ])
+
+SUBSCRIBED_USERS_FILE = "subscribed_users.json"
+
+async def check_status(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    ID_CHANEL = os.getenv("TELEGRAM_ID_CHANEL")
+    
+    try:
+        member = await callback.bot.get_chat_member(chat_id=ID_CHANEL, user_id=user_id)
+        if member.status in ["creator", "administrator", "member"]:
+            return True
+        else:
+            return False
+    except Exception:
+        return False
+    
+
+
+
+async def is_user_subscribed(user_id: int) -> bool:
+    if not os.path.exists(SUBSCRIBED_USERS_FILE):
+        return False
+
+    with open(SUBSCRIBED_USERS_FILE, "r") as f:
+        try:
+            subscribed_users = json.load(f)
+        except json.JSONDecodeError:
+            return False
+
+    for user in subscribed_users:
+        if user.get("user_id") == user_id:
+            return True
+
+    return False
+
+
+async def save_subscribed_user(callback: types.CallbackQuery, user_id: int) -> bool:
+    if not os.path.exists(SUBSCRIBED_USERS_FILE):
+        with open(SUBSCRIBED_USERS_FILE, "w") as f:
+            json.dump([], f)
+
+    if await is_user_subscribed(user_id):
+        return False 
+
+    with open(SUBSCRIBED_USERS_FILE, "r") as f:
+        try:
+            subscribed_users = json.load(f)
+        except json.JSONDecodeError:
+            subscribed_users = []
+
+    new_user = {
+        "user_id": user_id,
+        "date": datetime.utcnow().isoformat()
+    }
+    subscribed_users.append(new_user)
+
+    with open(SUBSCRIBED_USERS_FILE, "w") as f:
+        json.dump(subscribed_users, f, indent=4)
+    print(True)
+
+    return True

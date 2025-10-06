@@ -63,9 +63,11 @@ async def process_pre_checkout(query: types.PreCheckoutQuery):
             
             await add_value("bought_stars")
             await add_value("amount_stars", package["price"])
+            
+            BOT_NAME = os.getenv("BOT_NAME")
 
             purchase_notification = f"""
-STARS - {package["price"] * 0.013} usd ({package["price"]} stars)
+STARS - {package["price"] * 0.013} usd ({package["price"]} stars) - {BOT_NAME}
 """
             await send_message(purchase_notification)
             

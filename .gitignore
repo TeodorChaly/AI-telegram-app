@@ -11,3 +11,4 @@ logs.txt
 stats/stats.json
 .DS_Store
 videos/*
+subscribed_users.json

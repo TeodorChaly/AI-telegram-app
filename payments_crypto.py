@@ -90,8 +90,10 @@ async def check_crypto_payment(callback: types.CallbackQuery):
             await add_value("bought_crypto")
             await add_value("amount_crypto", paid_amount)
 
+            BOT_NAME = os.getenv("BOT_NAME")
+
             purchase_notification = f"""
-CRYPTO - {paid_amount} usdc 
+CRYPTO - {paid_amount} usdc - {BOT_NAME}
 """
             await send_message(purchase_notification)
 

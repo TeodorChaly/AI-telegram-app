@@ -7,8 +7,9 @@ import os
 from aiogram import Bot
 from dotenv import load_dotenv
 from aiogram import Bot
-from aiogram.types import FSInputFile
+from aiogram.types import FSInputFile,InputMediaPhoto
 import sys
+
 load_dotenv()
 
 
@@ -24,19 +25,18 @@ async def send_to_user(bot, chat_id):
         try:
             relative_path = os.getenv("RELATIVE_PATH")
 
-            video_path = "/videos/undress_.mp4"  
-            video_path = relative_path + video_path
+            from aiogram.types import FSInputFile,InputMediaPhoto
             
-            caption_text = "Hello 👋 this is a test message with video."
+            photo1 = FSInputFile(relative_path + "videos/girl1.jpg")
+            photo2 = FSInputFile(relative_path + "videos/girl2.jpg")
 
-            video = FSInputFile(video_path)
+            media = [
+                InputMediaPhoto(media=photo1, caption="""🔞 It's time to undress me - upload a photo for see me without cloth!
+Try and see for yourself 👇""", parse_mode="HTML"),
+                InputMediaPhoto(media=photo2)
+            ]
 
-            await bot.send_video(
-                chat_id=chat_id,
-                video=video,
-                caption=caption_text,
-                parse_mode="HTML"
-            )
+            await bot.send_media_group(chat_id=chat_id, media=media)
 
 
             return {"ok": True}
