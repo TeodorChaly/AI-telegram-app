@@ -157,9 +157,14 @@ user_agreed = load_agreed_users()
 def is_user_agreed(user_id: int) -> bool:
     return user_id in user_agreed
 
-def get_user_agreement_keyboard():
+def get_user_agreement_keyboard(message):
+    from handlers import get_text
+
+    language = message.from_user.language_code
+    accept_button = get_text("button", language=language)
+
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ Agreed and accepted", callback_data="agree")]
+        [InlineKeyboardButton(text=accept_button, callback_data="agree")]
     ])
 
 SUBSCRIBED_USERS_FILE = "subscribed_users.json"

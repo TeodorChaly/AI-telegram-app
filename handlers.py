@@ -23,12 +23,23 @@ from keyboards import *
 from dotenv import load_dotenv
 from stats.checker import *
 from aiogram.types import InputMediaVideo
+from language import choose_text_by_language, load_language_list
+from keyboards import *
 
 load_dotenv()
 
 TEST_MODE = os.getenv("TEST_MODE", "True") == "True"
 
 channel_url = os.getenv("TELEGRAM_CHANEL_URL")
+
+
+def get_text(part, user_id=None, language=None):
+    if language:
+        language = language
+
+    text = choose_text_by_language(part, language)
+
+    return text
 
 # -------------------
 # HANDLERS
@@ -46,31 +57,39 @@ def register_handlers(dp: Dispatcher, bot: Bot):
     @dp.message(Command("start"))
     async def start_handler(message: types.Message, state: FSMContext):
         user_id = message.from_user.id
-        chat_id = message.chat.id          
+        chat_id = message.chat.id
+        language = message.from_user.language_code
 
         print(f"user_id: {user_id}, chat_id: {chat_id}")
         if is_user_agreed(user_id):
+            welcome_text = get_text("returning", language=language)
+
             await state.set_state(UserStates.MAIN_MENU)
-            await message.answer("Welcome back! Choose an option:", reply_markup=main_menu)
+            await message.answer(welcome_text, reply_markup=main_menu(language))
         else:
             await send_user_agreement(message)
 
     async def send_user_agreement(message: types.Message):
+        agreement = get_text("conditions", language=message.from_user.language_code)
+
         await message.answer(
-            "📜 *User Agreement*\n\n"
-            "By clicking on Accept, you automatically agree to all of the above terms and conditions:\n\n"
-            "1. You must be at least 18 years old to use this bot.\n"
-            "2. You cannot use other people’s photos without their permission.\n"
-            "3. The creation and distribution of content with minors is strictly prohibited.\n" 
-            "4. You must not generate or distribute illegal, obscene, or offensive content.\n" 
-            "5. All content that you generate must comply with local and international laws.\n",
-            reply_markup=get_user_agreement_keyboard(),
+            agreement,
+            reply_markup=get_user_agreement_keyboard(message),
             parse_mode="Markdown"
         )
 
     @dp.callback_query(lambda c: c.data == "agree")
     async def on_agree(callback: types.CallbackQuery, state: FSMContext):
         user_id = callback.from_user.id
+        language = callback.from_user.language_code
+        first_time = get_text("first_time", language=language)
+        agreed = get_text("agreed", language=language)
+        subscription_bonus_buttons1 = get_text("subscription_bonus_buttons1", language=language)
+        subscription_bonus_buttons2 = get_text("subscription_bonus_buttons2", language=language)
+        subscription_bonus_description = get_text("subscription_bonus_description", language=language)
+
+
+
         if not is_user_agreed(user_id):
             user_agreed.add(user_id)
             save_agreed_users(user_agreed)
@@ -85,23 +104,23 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 f"{user.language_code}",
                 user_id
             )
-
+    
             await callback.message.answer(
-    "🎉 Welcome! You've received <b>5</b> free credits as a gift for your first registration.",
-    parse_mode="HTML", reply_markup=main_menu
+                first_time,
+                parse_mode="HTML", reply_markup=main_menu(language)
     )
 
         await state.set_state(UserStates.MAIN_MENU)
-        await callback.message.edit_text("You agreed! ✅")
+        await callback.message.edit_text(agreed)
 
 
         subscribe_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Subscribe to channel", url=channel_url)],
-        [InlineKeyboardButton(text="Check status", callback_data="check_my_subsciptions")]
+        [InlineKeyboardButton(text=subscription_bonus_buttons1, url=channel_url)],
+        [InlineKeyboardButton(text=subscription_bonus_buttons2, callback_data="check_my_subsciptions")]
         ])
 
         await callback.message.answer(
-            "🎁 <b>Get 5 additional credits</b> by subscribing to our channel!",
+            subscription_bonus_description,
             reply_markup=subscribe_keyboard,
             parse_mode="HTML"
         )
@@ -113,13 +132,17 @@ def register_handlers(dp: Dispatcher, bot: Bot):
     # ===== PAYMENT METHOD =====
     @dp.callback_query(lambda c: c.data in ["pay_stars", "pay_crypto"])
     async def choose_payment_method(callback: types.CallbackQuery, state: FSMContext):
+        language = callback.from_user.language_code
+        buy_credits_payment_methods_stars_select_package = get_text("buy_credits_payment_methods_stars_select_package", language=language)
+        buy_credits_payment_methods_crypto_description_1 = get_text("buy_credits_payment_methods_crypto_description_1", language=language)
+
         if callback.data == "pay_stars":
             await state.set_state(UserStates.BUY_CREDITS)
-            await callback.message.answer("Select a package to buy:", reply_markup=buy_credits_keyboard())
+            await callback.message.answer(buy_credits_payment_methods_stars_select_package, reply_markup=buy_credits_keyboard())
         elif callback.data == "pay_crypto":
             keyboard = buy_credits_crypto_keyboard()
             await callback.message.answer(
-                "Choose package and pay via CryptoBot:",
+                buy_credits_payment_methods_crypto_description_1,
                 reply_markup=keyboard
             )
         await callback.answer()
@@ -132,14 +155,19 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             await callback.message.delete()
         except Exception:
             pass
+        language = callback.from_user.language_code
+
+        subscription_bonus_buttons1 = get_text("subscription_bonus_buttons1", language=language) 
+        subscription_bonus_buttons2 = get_text("subscription_bonus_buttons2", language=language) 
+        subscription_bonus_description = get_text("subscription_bonus_description", language=language) 
 
         subscribe_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="Subscribe to channel", url=channel_url)],
-            [InlineKeyboardButton(text="Check status", callback_data="check_my_subsciptions")]
+            [InlineKeyboardButton(text=subscription_bonus_buttons1, url=channel_url)],
+            [InlineKeyboardButton(text=subscription_bonus_buttons2, callback_data="check_my_subsciptions")]
         ])
 
         await callback.message.answer(
-            "🎁 <b>Get 5 additional credits</b> by subscribing to our channel!",
+            subscription_bonus_description,
             reply_markup=subscribe_keyboard,
             parse_mode="HTML"
         )
@@ -151,6 +179,12 @@ def register_handlers(dp: Dispatcher, bot: Bot):
     # ===== CHECK CHANNEL STATUS =====
     @dp.callback_query(lambda c: c.data == "check_my_subsciptions")
     async def check_subscription_callback(callback: types.CallbackQuery):
+        language = callback.from_user.language_code
+
+        thank_for_subscription = get_text("thank_for_subscription", language=language) 
+        cancel = get_text("cancel", language=language) 
+
+
         user_id = callback.from_user.id
         ID_CHANEL = os.getenv("TELEGRAM_ID_CHANEL")
 
@@ -162,7 +196,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                     
                     status = await save_subscribed_user(callback, user_id)
                     if status:
-                        await callback.message.answer("Thanks you for your subsciption. You got 5 free credits!")
+                        await callback.message.answer(thank_for_subscription)
                         add_credits(user_id, 5)
                         await add_value("subscribed")
 
@@ -170,13 +204,31 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 except Exception:
                     pass  
             else:
-                await callback.answer("You are not in the channel ❌", show_alert=True)
+                await callback.answer(cancel, show_alert=True)
         except Exception:
-            await callback.answer("You are not in the channel ❌", show_alert=True)
+            await callback.answer(cancel, show_alert=True)
 
     # ===== GLOBAL HANDLER FOR TEXT BUTTONS =====
     @dp.message()
     async def global_handler(message: types.Message, state: FSMContext):
+        language = message.from_user.language_code
+        back_to_menu = get_text("back_to_menu", language=language)
+        language_text = get_text("language", language=language)
+        upload_photo = get_text("upload_photo", language=language)
+        choose_payment_method = get_text("choose_payment_method", language=language)
+        show_my_credits = get_text("show_my_credits", language=language)
+        select_a_package = get_text("select_a_package", language=language)
+        pay_usdc = get_text("pay_usdc", language=language)
+        pay_usdt = get_text("pay_usdt", language=language)
+        back_to_payment_methods = get_text("back_to_payment_methods", language=language)
+        crypto_to_pay = get_text("crypto_to_pay", language=language)
+        pay_currecny = get_text("pay_currecny", language=language)
+        photo = get_text("photo", language=language)
+        video = get_text("video", language=language)
+        process_photo_options = get_text("process_photo_options", language=language)
+        got_your_image = get_text("got_your_image", language=language)
+        not_an_image = get_text("not_an_image", language=language)
+
         user_id = message.from_user.id
         if message.from_user.is_bot:
             return
@@ -190,72 +242,72 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             current_state = UserStates.MAIN_MENU.state
 
         # --------- Back to main menu ----------
-        if message.text == "⬅️ Back to menu":
+        if message.text in back_to_menu_list:
             await state.set_state(UserStates.MAIN_MENU)
-            await message.answer("🏠 Back to main menu. Choose an option:", reply_markup=main_menu)
+            await message.answer(back_to_menu, reply_markup=main_menu(language))
             return
 
-        if message.text == "🌐 Language":
+        if message.text in language_selection_list:
             await add_value("language")
             await log_message(f"Needs new language", user_id)
-            await message.answer("Coming soon...")
+            await message.answer(language_text, reply_markup=main_menu(language))
             return
 
         # --------- Main menu actions ----------
-        if message.text == "📸 Send photo":
+        if message.text in photo_selection_list:
             await state.set_state(UserStates.SEND_PHOTO)
-            await message.answer("Please upload a photo and I'll process it.", reply_markup=send_photo_menu)
+            await message.answer(upload_photo, reply_markup=send_photo_menu(language))
             return
 
-        if message.text == "💳 Buy credits":
+        if message.text in buy_credits_section_list:
             await state.set_state(UserStates.BUY_CREDITS)
             await log_message(f"Looking to buy something, maybe...", user_id)
             await add_value("look_to_buy")
-            await message.answer("💳 Choose a payment method:", reply_markup=buy_credits_reply_menu)
+            await message.answer(choose_payment_method, reply_markup=buy_credits_reply_menu(language))
             return
-        
-        if message.text == "💰 Show my credits":
+
+        if message.text in credits_selection_list:
             user_credits = get_user_credits(user_id)
             await log_message(f"User checked his credits {user_credits}", user_id)
-            await message.answer(f"💰 You have {user_credits} credits.")
+            await message.answer(show_my_credits.format(credits=user_credits))
             return
-        
-        if message.text == "⬅️ Back to payment methods":
+
+        if message.text in back_to_payment_methods_list:
             await state.set_state(UserStates.BUY_CREDITS)
-            await message.answer("💳 Choose a payment method:", reply_markup=buy_credits_reply_menu)
+            await message.answer(choose_payment_method, reply_markup=buy_credits_reply_menu(language))
             return
 
 
-        if message.text == "⭐ Pay stars":
+        if message.text in pay_stars_list:
             await log_message(f"User prefer stars", user_id)
             await add_value("look_to_buy_stars")
             await state.set_state(UserStates.BUY_CREDITS)
-            await message.answer("Select a package to buy:", reply_markup=buy_credits_keyboard())
+            await message.answer(select_a_package, reply_markup=buy_credits_keyboard())
             return
 
-        if message.text == "💰 Pay crypto (🔥 -10%)":
+        if message.text in pay_crypto_list:
             await add_value("look_to_buy_crypto")
             await log_message(f"User prefer crypto", user_id)
             crypto_menu = ReplyKeyboardMarkup(
                 keyboard=[
-                    [KeyboardButton(text="Pay USDT 🟢"), KeyboardButton(text="Pay USDC 🔵")],
-                    [KeyboardButton(text="⬅️ Back to payment methods")]
+                    [KeyboardButton(text=pay_usdt), KeyboardButton(text=pay_usdc)],
+                    [KeyboardButton(text=back_to_payment_methods)]
                 ],
                 resize_keyboard=True
             )
             await message.answer(
-                "Choose cryptocurrency to pay with:",
+                crypto_to_pay,
                 reply_markup=crypto_menu
             )
             await state.set_state(UserStates.BUY_CREDITS)
             return
-        
-        if message.text in ["Pay USDT 🟢", "Pay USDC 🔵"]:
+
+        if message.text in pay_usd_list:
             if message.text.count("USDT") >= 1:
                 currency = "USDT"
                 keyboard = buy_credits_crypto_keyboard(currency=currency)
                 await message.answer(
-                    f"Pay with {currency} via CryptoBot:",
+                    pay_currecny.format(currency=currency),
                     reply_markup=keyboard
                 )
                 return
@@ -263,7 +315,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 currency = "USDC"
                 keyboard = buy_credits_crypto_keyboard(currency=currency)
                 await message.answer(
-                    f"Pay with {currency} via CryptoBot:",
+                    pay_currecny.format(currency=currency),
                     reply_markup=keyboard
                 )
                 return
@@ -275,11 +327,11 @@ def register_handlers(dp: Dispatcher, bot: Bot):
 
         
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Photo (10 credits)", callback_data=f"process_photo:{file_path}")],
-                [InlineKeyboardButton(text="Video (20 credits) - New 🔥", callback_data=f"process_video:{file_path}")]
+                [InlineKeyboardButton(text=photo, callback_data=f"process_photo:{file_path}")],
+                [InlineKeyboardButton(text=video, callback_data=f"process_video:{file_path}")]
             ])
             await message.answer(
-                "Choose how you want to process the file:",
+                process_photo_options,
                 reply_markup=keyboard
             )
 
@@ -301,18 +353,18 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 if mime_type.startswith("image/") or file_name.endswith(image_ext):
                     file_path = await save_document_as_image(message, bot)
                 else:
-                    await message.answer("❌ This document is not an image.")
+                    await message.answer(not_an_image)
                     return
             else:
                 return
 
 
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Photo (10 credits)", callback_data=f"process_photo:{file_path}")],
-                [InlineKeyboardButton(text="Video (20 credits) - New 🔥", callback_data=f"process_video:{file_path}")]
+                [InlineKeyboardButton(text=photo, callback_data=f"process_photo:{file_path}")],
+                [InlineKeyboardButton(text=video, callback_data=f"process_video:{file_path}")]
             ])
             await message.reply(
-"""✅ Got your image. Choose how you want to process the photo:""",
+                got_your_image,
                 reply_markup=keyboard
             )
 
@@ -321,6 +373,22 @@ def register_handlers(dp: Dispatcher, bot: Bot):
 
     @dp.callback_query(lambda c: c.data.startswith("process_"))
     async def process_file_callback(callback: types.CallbackQuery):
+        # language = "ru"
+        language = callback.from_user.language_code
+        buy_credits = get_text("buy_credits", language=language)
+        balance_not_enough_10 = get_text("balance_not_enough_10", language=language)
+        get_5_free_credits = get_text("get_5_free_credits", language=language)
+        could_not_spend_credits = get_text("could_not_spend_credits", language=language)
+        process_time = get_text("process_time", language=language)
+        error_processing_image = get_text("error_processing_image", language=language)
+        effect_undress = get_text("effect_undress", language=language)
+        effect_cloth_off_trend = get_text("effect_cloth_off_trend", language=language)
+        effect_rip_her_clothes = get_text("effect_rip_her_clothes", language=language)
+        effect_touch_boobs = get_text("effect_touch_boobs", language=language)
+        effect_titty_drop = get_text("effect_titty_drop", language=language)
+        effect_breast_play = get_text("effect_breast_play", language=language)
+        video_effect = get_text("video_effect", language=language)
+
         user_id = callback.from_user.id
         data = callback.data
         action, file_path = data.split(":", 1) 
@@ -342,12 +410,11 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                     print(True, "Without disscount")
 
                     buy_credits_inline = InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="💳 Buy credits", callback_data="pay_credits")]
+                    [InlineKeyboardButton(text=buy_credits, callback_data="pay_credits")]
                     ])
 
                     await callback.message.answer(
-                    f"⚠️ You don't have enough credits (10 required)."
-                    f"\nYour balance: <b>{user_credits}</b>",
+                    balance_not_enough_10 + f"<b>{user_credits}</b>",
                     parse_mode="HTML",
                     reply_markup=buy_credits_inline
                     )
@@ -366,13 +433,12 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                     print(False, "With disscount")
 
                     buy_credits_inline = InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="💳 Buy credits", callback_data="pay_credits"),
-                     InlineKeyboardButton(text="Get free credits! ", callback_data="subscribe_to_channel")]
+                    [InlineKeyboardButton(text=buy_credits, callback_data="pay_credits"),
+                     InlineKeyboardButton(text=get_5_free_credits, callback_data="subscribe_to_channel")]
                     ])
 
                     await callback.message.answer(
-                    f"⚠️ You don't have enough credits (10 required)."
-                    f"\nYour balance: <b>{user_credits}</b>",
+                    balance_not_enough_10 + f"<b>{user_credits}</b>",
                     parse_mode="HTML",
                     reply_markup=buy_credits_inline
                     )
@@ -391,14 +457,14 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 
 
             if not spend_credits(user_id, 10):
-                await callback.message.answer("⚠️ Could not spend credits. Try again later.")
+                await callback.message.answer(could_not_spend_credits)
                 await callback.answer()
                 return
             
             
 
             status_message = await callback.message.answer(
-    "✅ The process will take 30–40 seconds... 10 credits spent."
+    process_time
 )
             processed_image = await call_runpod_api(IMAGE_PATH=file_path, image_name=file_name, user_id=user_id)
 
@@ -430,7 +496,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                     os.remove(file_path)       
                 except Exception as e:
                     print(f"Error while deleting: {e}")
-                await callback.message.answer("❌ Error processing the image.")
+                await callback.message.answer(error_processing_image)
                 add_credits(user_id, 10)
 
         elif action == "process_video":
@@ -451,11 +517,11 @@ def register_handlers(dp: Dispatcher, bot: Bot):
 
             
             effects_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Undress 🔥", callback_data=f"video_effect:effect1:{file_path}"), InlineKeyboardButton(text="Cloth off trend 🔥", callback_data=f"video_effect:effect2:{file_path}")],
-                [InlineKeyboardButton(text="Rip her clothes", callback_data=f"video_effect:effect3:{file_path}"), InlineKeyboardButton(text="Touch Boobs", callback_data=f"video_effect:effect4:{file_path}")],
-                [InlineKeyboardButton(text="Titty drop", callback_data=f"video_effect:effect5:{file_path}"), InlineKeyboardButton(text="Breast play", callback_data=f"video_effect:effect6:{file_path}")]
+                [InlineKeyboardButton(text=effect_undress, callback_data=f"video_effect:effect1:{file_path}"), InlineKeyboardButton(text=effect_cloth_off_trend, callback_data=f"video_effect:effect2:{file_path}")],
+                [InlineKeyboardButton(text=effect_rip_her_clothes, callback_data=f"video_effect:effect3:{file_path}"), InlineKeyboardButton(text=effect_touch_boobs, callback_data=f"video_effect:effect4:{file_path}")],
+                [InlineKeyboardButton(text=effect_titty_drop, callback_data=f"video_effect:effect5:{file_path}"), InlineKeyboardButton(text=effect_breast_play, callback_data=f"video_effect:effect6:{file_path}")]
             ])
-            await callback.message.answer("Please select a video effect to apply to your photo:", reply_markup=effects_keyboard)
+            await callback.message.answer(video_effect, reply_markup=effects_keyboard)
 
     @dp.callback_query(lambda c: c.data == "pay_credits")
     async def pay_credits_callback(callback: types.CallbackQuery, state: FSMContext):
@@ -464,10 +530,13 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         except Exception:
             pass
 
+        language = callback.from_user.language_code
+        choose_payment_method = get_text("choose_payment_method", language=language)
+
         await state.set_state(UserStates.BUY_CREDITS)
         await callback.message.answer(
-            "💳 Choose a payment method:",
-            reply_markup=buy_credits_reply_menu
+            choose_payment_method,
+            reply_markup=buy_credits_reply_menu(language)
         )
         await callback.answer()
 
@@ -482,16 +551,22 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         except Exception:
             pass
 
+        language = callback.from_user.language_code
+        buy_credits = get_text("buy_credits", language=language)
+        balance_not_enough_20 = get_text("balance_not_enough_20", language=language)
+        could_not_spend_credits = get_text("could_not_spend_credits", language=language)
+        process_3_4_minutes = get_text("process_3_4_minutes", language=language)
+        error_processing_image = get_text("error_processing_image", language=language)
+
         user_credits = get_user_credits(user_id)
         if user_credits < 20:
                 
                 buy_credits_inline = InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="💳 Buy credits", callback_data="pay_credits")]
+                    [InlineKeyboardButton(text=buy_credits, callback_data="pay_credits")]
                 ])
 
                 await callback.message.answer(
-                    f"⚠️ You don't have enough credits (20 required)."
-                    f"\nYour balance: <b>{user_credits}</b>",
+                    balance_not_enough_20 + f"<b>{user_credits}</b>",
                     parse_mode="HTML",
                     reply_markup=buy_credits_inline
                 )
@@ -507,7 +582,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 return
 
         if not spend_credits(user_id, 20):
-                await callback.message.answer("⚠️ Could not spend credits. Try again later.")
+                await callback.message.answer(could_not_spend_credits)
                 await callback.answer()
                 return
                 
@@ -521,7 +596,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
 
         time_start = time.time()
 
-        status_message = await callback.message.answer("✅ The process will take 3-4 minutes... 20 credits spent.")
+        status_message = await callback.message.answer(process_3_4_minutes)
         processed_video = await call_runpod_api_video(
             IMAGE_PATH=file_path,
             image_name=os.path.basename(file_path),
@@ -547,7 +622,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 except Exception as e:
                     print(f"Error while deleting: {e}")
         else:
-                await callback.message.answer("❌ Error processing the video.")
+                await callback.message.answer(error_processing_image)
                 try:
                     os.remove(file_path)       
                 except Exception as e:
