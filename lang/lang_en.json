@@ -1,6 +1,4 @@
 {
-   
-  
   "photo_selection":"📸 Send photo",
   "buy_credits_selection":"💳 Buy credits",
   "credits_selection":"💰 Show my credits",
@@ -11,7 +9,6 @@
   "pay_usdc": "Pay USDC 🔵",
   "pay_usdt": "Pay USDT 🟢",
   "back_to_payment_methods": "⬅️ Back to payment methods",
-
 
   "conditions": "📜 *User Agreement*\n\nBy clicking on Accept, you automatically agree to all of the above terms and conditions:\n\n1. You must be at least 18 years old to use this bot.\n2. You cannot use other people’s photos without their permission.\n3. The creation and distribution of content with minors is strictly prohibited.\n4. You must not generate or distribute illegal, obscene, or offensive content.\n5. All content that you generate must comply with local and international laws.\n",
   "button": "✅ I agree and accept",
@@ -27,7 +24,6 @@
   "thank_for_subscription": "Thank you for subscribing! You received 5 free credits!",
   "cancel":"You are not in the channel ❌",
 
-  
     "back_to_menu": "🏠 Back to main menu. Choose an option:",
     "language": "Coming soon...",
     "upload_photo": "Please upload a photo and I'll process it.",
@@ -41,7 +37,6 @@
     "process_photo_options": "Choose how you want to process the file:",
     "got_your_image": "✅ Got your image. Choose how you want to process the photo:",
     "not_an_image": "❌ This document is not an image.",
-
 
     "buy_credits": "💳 Buy credits",
     "balance_not_enough_10": "⚠️ You don't have enough credits (10 required).\nYour balance: ",

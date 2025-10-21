@@ -5,15 +5,39 @@ from payments_stars import CREDIT_PACKAGES
 # MAIN MENU KEYBOARDS
 # -------------------
 
-photo_selection_list = ["📸 Send photo", "📸 Отправить фото"]
-buy_credits_section_list = ["💳 Buy credits", "💳 Купить кредиты"]
-language_selection_list = ["🌐 Language", "🌐 Язык"]
-credits_selection_list = ["💰 Show my credits", "💰 Показать мои кредиты"]
-back_to_menu_list = ["⬅️ Back to menu", "⬅️ Назад в меню"]
-pay_stars_list = ["⭐ Pay stars", "⭐ Оплатить звезды"]
-pay_crypto_list = ["💰 Pay crypto (🔥 -10%)", "💰 Оплатить криптовалютой (🔥 -10%)"]
-pay_usd_list = ["Pay USDT 🟢", "Оплата по USDT 🟢", "Pay USDC 🔵", "Оплата по USDC 🔵"]
-back_to_payment_methods_list = ["⬅️ Back to payment methods", "⬅️ Назад к способам оплаты"]
+languages = ["en", "ru", "de"]
+
+
+languages_dict = {
+    "🇬🇧": "en",
+    "🇷🇺": "ru",
+    "🇩🇪": "de"
+}
+
+def get_section(section):
+    from handlers import get_text
+
+    texts = [get_text(section, language=lang) for lang in languages]
+    return texts
+
+def get_usd():
+    from handlers import get_text
+
+    usdt = [get_text("pay_usdt", language=lang) for lang in languages]
+    usdc = [get_text("pay_usdc", language=lang) for lang in languages]
+
+    return usdt + usdc
+
+
+photo_selection_list = get_section("photo_selection")
+buy_credits_section_list = get_section("buy_credits_selection")
+language_selection_list = get_section("language_selection")
+credits_selection_list = get_section("credits_selection")
+back_to_menu_list = get_section("back_to_menu_selection")
+pay_stars_list = get_section("pay_stars_section")
+pay_crypto_list = get_section("pay_crypto_section")
+pay_usd_list = get_usd()    
+back_to_payment_methods_list = get_section("back_to_payment_methods")
 
 
 def main_menu(language):
@@ -33,6 +57,16 @@ def main_menu(language):
     )
 
     return main_menu
+
+
+
+def language_change():
+    keyboard = [
+        [KeyboardButton(text=flag) for flag in list(languages_dict.keys())[:2]],  
+        [KeyboardButton(text=list(languages_dict.keys())[2])] 
+    ]
+    return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
+
 
 def send_photo_menu(language):
     from handlers import get_text

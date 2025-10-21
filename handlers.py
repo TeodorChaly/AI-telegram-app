@@ -1,4 +1,5 @@
 # handlers.py
+from email.mime import message
 import math
 import os
 import time
@@ -23,8 +24,7 @@ from keyboards import *
 from dotenv import load_dotenv
 from stats.checker import *
 from aiogram.types import InputMediaVideo
-from language import choose_text_by_language, load_language_list
-from keyboards import *
+from database import *
 
 load_dotenv()
 
@@ -33,18 +33,10 @@ TEST_MODE = os.getenv("TEST_MODE", "True") == "True"
 channel_url = os.getenv("TELEGRAM_CHANEL_URL")
 
 
-def get_text(part, user_id=None, language=None):
-    if language:
-        language = language
 
-    text = choose_text_by_language(part, language)
-
-    return text
-
-# -------------------
-# HANDLERS
-# -------------------
-
+def get_user_language(user_id):
+   language = get_user(user_id)[4]
+   return language
 
 
 def register_handlers(dp: Dispatcher, bot: Bot):
@@ -58,7 +50,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
     async def start_handler(message: types.Message, state: FSMContext):
         user_id = message.from_user.id
         chat_id = message.chat.id
-        language = message.from_user.language_code
+        language = get_user_language(user_id)
 
         print(f"user_id: {user_id}, chat_id: {chat_id}")
         if is_user_agreed(user_id):
@@ -70,7 +62,8 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             await send_user_agreement(message)
 
     async def send_user_agreement(message: types.Message):
-        agreement = get_text("conditions", language=message.from_user.language_code)
+        language = get_user_language(message.from_user.id)
+        agreement = get_text("conditions", language=language)
 
         await message.answer(
             agreement,
@@ -81,14 +74,14 @@ def register_handlers(dp: Dispatcher, bot: Bot):
     @dp.callback_query(lambda c: c.data == "agree")
     async def on_agree(callback: types.CallbackQuery, state: FSMContext):
         user_id = callback.from_user.id
-        language = callback.from_user.language_code
+        language = get_user_language(user_id)
         first_time = get_text("first_time", language=language)
         agreed = get_text("agreed", language=language)
         subscription_bonus_buttons1 = get_text("subscription_bonus_buttons1", language=language)
         subscription_bonus_buttons2 = get_text("subscription_bonus_buttons2", language=language)
         subscription_bonus_description = get_text("subscription_bonus_description", language=language)
 
-
+        add_user(user_id=user_id, subscribed_status=False, original_language=language)
 
         if not is_user_agreed(user_id):
             user_agreed.add(user_id)
@@ -132,7 +125,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
     # ===== PAYMENT METHOD =====
     @dp.callback_query(lambda c: c.data in ["pay_stars", "pay_crypto"])
     async def choose_payment_method(callback: types.CallbackQuery, state: FSMContext):
-        language = callback.from_user.language_code
+        language = get_user_language(callback.from_user.id)
         buy_credits_payment_methods_stars_select_package = get_text("buy_credits_payment_methods_stars_select_package", language=language)
         buy_credits_payment_methods_crypto_description_1 = get_text("buy_credits_payment_methods_crypto_description_1", language=language)
 
@@ -155,7 +148,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
             await callback.message.delete()
         except Exception:
             pass
-        language = callback.from_user.language_code
+        language = get_user_language(callback.from_user.id)
 
         subscription_bonus_buttons1 = get_text("subscription_bonus_buttons1", language=language) 
         subscription_bonus_buttons2 = get_text("subscription_bonus_buttons2", language=language) 
@@ -179,7 +172,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
     # ===== CHECK CHANNEL STATUS =====
     @dp.callback_query(lambda c: c.data == "check_my_subsciptions")
     async def check_subscription_callback(callback: types.CallbackQuery):
-        language = callback.from_user.language_code
+        language = get_user_language(callback.from_user.id)
 
         thank_for_subscription = get_text("thank_for_subscription", language=language) 
         cancel = get_text("cancel", language=language) 
@@ -195,7 +188,10 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                     
                     
                     status = await save_subscribed_user(callback, user_id)
-                    if status:
+                    status_2 = await save_subscribed_user_db(user_id)
+                    print("Subscription status saved:", status, status_2)
+
+                    if status and status_2:
                         await callback.message.answer(thank_for_subscription)
                         add_credits(user_id, 5)
                         await add_value("subscribed")
@@ -211,7 +207,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
     # ===== GLOBAL HANDLER FOR TEXT BUTTONS =====
     @dp.message()
     async def global_handler(message: types.Message, state: FSMContext):
-        language = message.from_user.language_code
+        language = get_user_language(message.from_user.id)
         back_to_menu = get_text("back_to_menu", language=language)
         language_text = get_text("language", language=language)
         upload_photo = get_text("upload_photo", language=language)
@@ -236,6 +232,20 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         if not is_user_agreed(user_id):
             await send_user_agreement(message)
             return
+        if message.text is not None:
+            selected_flag = message.text.strip() 
+
+            from keyboards import languages_dict
+
+            if selected_flag in languages_dict:
+                selected_lang = languages_dict[selected_flag]
+                update_user(user_id=user_id, original_language=selected_lang)
+                await state.set_state(UserStates.MAIN_MENU)
+                await message.answer(
+                    get_text("back_to_menu", language=selected_lang),
+                    reply_markup=main_menu(selected_lang)
+                )
+                print(f"User {user_id} selected language: {selected_lang}")
 
         current_state = await state.get_state()
         if current_state is None:
@@ -250,7 +260,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         if message.text in language_selection_list:
             await add_value("language")
             await log_message(f"Needs new language", user_id)
-            await message.answer(language_text, reply_markup=main_menu(language))
+            await message.answer("Choose a language:", reply_markup=language_change())
             return
 
         # --------- Main menu actions ----------
@@ -371,10 +381,11 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         # elif (message.photo or message.document) and current_state != UserStates.SEND_PHOTO.state: 
         #     await message.answer("Please, go to '📸 Send photo' section 1")
 
+    
+
     @dp.callback_query(lambda c: c.data.startswith("process_"))
     async def process_file_callback(callback: types.CallbackQuery):
-        # language = "ru"
-        language = callback.from_user.language_code
+        language = get_user_language(callback.from_user.id)
         buy_credits = get_text("buy_credits", language=language)
         balance_not_enough_10 = get_text("balance_not_enough_10", language=language)
         get_5_free_credits = get_text("get_5_free_credits", language=language)
@@ -405,8 +416,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
 
             user_credits = get_user_credits(user_id)
             if user_credits < 10:
-
-                if await is_user_subscribed(user_id) or await check_status(callback):
+                if (await is_user_subscribed(user_id) and await is_user_subscribed_db(user_id)) or await check_status(callback):
                     print(True, "Without disscount")
 
                     buy_credits_inline = InlineKeyboardMarkup(inline_keyboard=[
@@ -496,7 +506,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                     os.remove(file_path)       
                 except Exception as e:
                     print(f"Error while deleting: {e}")
-                await callback.message.answer(error_processing_image)
+                await callback.message.answer(error_processing_image + " Your credits have been refunded.")
                 add_credits(user_id, 10)
 
         elif action == "process_video":
@@ -530,7 +540,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         except Exception:
             pass
 
-        language = callback.from_user.language_code
+        language = get_user_language(callback.from_user.id)
         choose_payment_method = get_text("choose_payment_method", language=language)
 
         await state.set_state(UserStates.BUY_CREDITS)
@@ -551,7 +561,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         except Exception:
             pass
 
-        language = callback.from_user.language_code
+        language = get_user_language(callback.from_user.id)
         buy_credits = get_text("buy_credits", language=language)
         balance_not_enough_20 = get_text("balance_not_enough_20", language=language)
         could_not_spend_credits = get_text("could_not_spend_credits", language=language)
@@ -622,7 +632,7 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 except Exception as e:
                     print(f"Error while deleting: {e}")
         else:
-                await callback.message.answer(error_processing_image)
+                await callback.message.answer(error_processing_image + " Your credits have been refunded.")
                 try:
                     os.remove(file_path)       
                 except Exception as e:

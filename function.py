@@ -8,6 +8,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from stats.checker import *
 from aiogram import types
 from dotenv import load_dotenv
+from database import get_user
 
 load_dotenv()
 
@@ -135,6 +136,27 @@ async def blur_image(filepath: str) -> str:
     new_filepath = await asyncio.to_thread(_blur_sync, filepath)
     return new_filepath
 
+def choose_text_by_language(part_of_text, language_code):
+
+    lang_folder = f"lang"
+    os.makedirs(lang_folder, exist_ok=True)
+
+    with open(f"{lang_folder}/lang_{language_code}.json", "r", encoding="utf-8") as f:
+        texts = json.load(f)
+
+    if part_of_text in texts:
+        return texts[part_of_text]
+
+
+def get_text(part, user_id=None, language=None):
+    if language:
+        language = language
+
+    text = choose_text_by_language(part, language)
+
+    return text
+
+
 # -------------------
 # User agreements
 # -------------------
@@ -225,5 +247,28 @@ async def save_subscribed_user(callback: types.CallbackQuery, user_id: int) -> b
     with open(SUBSCRIBED_USERS_FILE, "w") as f:
         json.dump(subscribed_users, f, indent=4)
     print(True)
+
+    return True
+
+
+async def is_user_subscribed_db(user_id: int) -> bool:
+
+    user_info = get_user(user_id)
+
+    if user_info:
+        if user_info[3] == 1:
+            return True
+        else:
+            return False
+    else:
+        return True
+    
+
+async def save_subscribed_user_db(user_id: int) -> bool:
+    if await is_user_subscribed_db(user_id):
+        return False 
+
+    from database import update_user
+    update_user(user_id=user_id, subscribed_status=True)
 
     return True

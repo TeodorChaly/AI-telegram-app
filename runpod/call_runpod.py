@@ -2,21 +2,18 @@ import asyncio
 import base64
 import json
 import os
-import random
 import time
 import aiohttp
-
-import aiohttp
-import requests
-
+import random
 from dotenv import load_dotenv
+
 load_dotenv()
 
 API = os.getenv("API")
-server_id = os.getenv("SERVER_ID")
+SERVER_ID = os.getenv("SERVER_ID")
 
-
-URL = f"https://api.runpod.ai/v2/{server_id}/runsync"
+URL_RUN = f"https://api.runpod.ai/v2/{SERVER_ID}/run"
+URL_STATUS = f"https://api.runpod.ai/v2/{SERVER_ID}/status"
 
 headers = {
     "Authorization": f"Bearer {API}",
@@ -28,6 +25,7 @@ with open("runpod/workflow_api.json", "r", encoding="utf-8") as f:
 
 
 async def call_runpod_api(IMAGE_PATH, image_name, user_id=None):
+    # читаем и кодируем картинку
     with open(IMAGE_PATH, "rb") as f:
         img_bytes = f.read()
     img_b64 = base64.b64encode(img_bytes).decode("utf-8")
@@ -36,7 +34,7 @@ async def call_runpod_api(IMAGE_PATH, image_name, user_id=None):
     workflow["35"]["inputs"]["image"] = image_name
     workflow["13"]["inputs"]["noise_seed"] = random.randint(1, 100000000)
     # workflow["19"]["inputs"]["steps"] = 40
-    
+
     payload = {
         "input": {
             "workflow": workflow,
@@ -45,44 +43,57 @@ async def call_runpod_api(IMAGE_PATH, image_name, user_id=None):
             ]
         }
     }
+
+    print(f"User: {user_id} - Image {image_name} sent to runpod")
     time_start = time.time()
-    print("User:", user_id, f"- Image {image_name} sended to runpod")
-    timeout = aiohttp.ClientTimeout(total=300)  # таймаут в секундах
+
+    timeout = aiohttp.ClientTimeout(total=600)  # увеличено до 10 минут
     async with aiohttp.ClientSession(timeout=timeout) as session:
-        try:
-            async with session.post(URL, headers=headers, json=payload, timeout=300) as resp:
-                data = await resp.json()
-        except Exception as e:
-            print("Ошибка запроса:", e)
-            return
+        # запускаем задачу
+        async with session.post(URL_RUN, headers=headers, json=payload) as resp:
+            start_data = await resp.json()
+            job_id = start_data.get("id")
+            if not job_id:
+                print("Failed to get job_id:", start_data)
+                return None
 
-    time_end = time.time()
-    print(f"User:", user_id, f"- Response time: {time_end - time_start:.2f} seconds")
+        # опрашиваем статус
+        while True:
+            async with session.get(f"{URL_STATUS}/{job_id}", headers=headers) as resp:
+                status_data = await resp.json()
+                status = status_data.get("status")
 
-    status = data.get("status", "UNKNOWN")
+                if status == "COMPLETED":
+                    images = status_data.get("output", {}).get("images", [])
+                    if images:
+                        img_obj = images[0]
+                        img_data = img_obj.get("data")
 
-    if status in ("COMPLETED", "FAILED"):
-        if status == "COMPLETED":
-            images = data.get("output", {}).get("images", [])
-            if images: 
-                img_obj = images[0] 
-                img_data = img_obj.get("data")
-                if img_data:
-                    img_bytes = base64.b64decode(img_data)
+                        if img_data:
+                            img_bytes = base64.b64decode(img_data)
+                            save_dir = os.path.dirname(IMAGE_PATH)
+                            filename = os.path.join(save_dir, f"{os.path.splitext(image_name)[0]}_naked.png")
 
-                    save_dir = os.path.dirname(IMAGE_PATH)
-                    filename = os.path.join(save_dir, f"{os.path.splitext(image_name)[0]}_naked.png")
+                            with open(filename, "wb") as f:
+                                f.write(img_bytes)
 
-                    with open(filename, "wb") as f:
-                        f.write(img_bytes)
+                            time_end = time.time()
+                            print(f"User: {user_id} - Response time: {time_end - time_start:.2f} seconds")
+                            print(f"Saved file: {filename}")
+                            return filename
 
-                    return filename
-        else:
-            return None
+                    print("No image data in response:", status_data)
+                    return None
+
+                elif status == "FAILED":
+                    print("Job failed:", status_data)
+                    return None
+
+            # ждем 5 секунд между проверками
+            await asyncio.sleep(5)
 
 
 # if __name__ == "__main__":
-#     IMAGE_PATH = ""
-#     image_name = ""
-
+#     IMAGE_PATH = "path/to/image.jpg"
+#     image_name = "image.jpg"
 #     asyncio.run(call_runpod_api(IMAGE_PATH, image_name))
