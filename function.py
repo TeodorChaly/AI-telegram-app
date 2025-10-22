@@ -137,6 +137,10 @@ async def blur_image(filepath: str) -> str:
     return new_filepath
 
 def choose_text_by_language(part_of_text, language_code):
+    from keyboards import languages
+
+    if language_code not in languages:
+        language_code = "en"
 
     lang_folder = f"lang"
     os.makedirs(lang_folder, exist_ok=True)
