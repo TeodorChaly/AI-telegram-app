@@ -35,7 +35,11 @@ channel_url = os.getenv("TELEGRAM_CHANEL_URL")
 
 
 def get_user_language(user_id):
-   language = get_user(user_id)[4]
+   user = get_user(user_id)
+   if user is None:
+        language = "en" 
+   else:
+        language = user[4]
    return language
 
 
@@ -241,7 +245,13 @@ def register_handlers(dp: Dispatcher, bot: Bot):
 
             if selected_text in languages_dict:
                 selected_lang = languages_dict[selected_text]
-                update_user(user_id=user_id, original_language=selected_lang)
+
+
+                if user_exists(user_id):
+                    update_user(user_id=user_id, original_language=selected_lang)
+                else:
+                    add_user(user_id=user_id, subscribed_status=True, original_language=selected_lang)
+                    
                 await state.set_state(UserStates.MAIN_MENU)
                 await message.answer(
                     get_text("back_to_menu", language=selected_lang),

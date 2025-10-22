@@ -89,9 +89,19 @@ def get_user(user_id: int):
     user = execute_query(query, params=(user_id,), fetchone=True)
     return user
 
-# update_user(user_id=710680274, subscribed_status=True, original_language="de")
+def delete_user(user_id: int):
+    query = "DELETE FROM users WHERE user_id = ?"
+    execute_query(query, params=(user_id,), commit=True)
+
+def user_exists(user_id: int) -> bool:
+    query = "SELECT 1 FROM users WHERE user_id = ?"
+    result = execute_query(query, params=(user_id,), fetchone=True)
+    return result is not None
 
 
 
-# users = execute_query("SELECT * FROM users", fetchall=True)
-# print(users)
+if __name__ == "__main__":
+    print(user_exists(user_id=1048760417))
+
+    users = execute_query("SELECT * FROM users", fetchall=True)
+    print(users)
