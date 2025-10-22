@@ -5,13 +5,18 @@ from payments_stars import CREDIT_PACKAGES
 # MAIN MENU KEYBOARDS
 # -------------------
 
-languages = ["en", "ru", "de"]
+languages = ["en", "ru", "de", "es", "fr", "it", "pt", "pl"]
 
 
 languages_dict = {
     "🇬🇧 EN": "en",
     "🇷🇺 RU": "ru",
     "🇩🇪 DE": "de",
+    "🇪🇸 ES": "es",
+    "🇫🇷 FR": "fr",
+    "🇮🇹 IT": "it",
+    "🇵🇹 PT": "pt",
+    "🇵🇱 PL": "pl"
 }
 
 def get_section(section):
