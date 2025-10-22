@@ -1,9 +1,12 @@
 import sqlite3
 import os
 from datetime import date
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Path to the database file
-DB_PATH = "/Users/teodorcalijs/AI Work/Undressor-production/telegram-bot"  
+DB_PATH = os.getenv("DB_PATH")
 DB_NAME = os.path.join(DB_PATH, "bot.db")
 
 os.makedirs(DB_PATH, exist_ok=True)
@@ -90,5 +93,5 @@ def get_user(user_id: int):
 
 
 
-users = execute_query("SELECT * FROM users", fetchall=True)
-print(users)
+# users = execute_query("SELECT * FROM users", fetchall=True)
+# print(users)

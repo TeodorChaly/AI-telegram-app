@@ -4,7 +4,7 @@
   "credits_selection":"💰 Show my credits",
   "language_selection":"🌐 Language",
   "back_to_menu_selection":"⬅️ Back to menu",
-  "pay_stars_section":"⭐ Pay stars",
+  "pay_stars_section":"⭐ Pay card (TG STARS)",
   "pay_crypto_section":"💰 Pay crypto (🔥 -10%)",
   "pay_usdc": "Pay USDC 🔵",
   "pay_usdt": "Pay USDT 🟢",
@@ -53,5 +53,15 @@
     "video_effect": "Please select a video effect to apply to your photo:",
 
     "balance_not_enough_20": "⚠️ You don't have enough credits (20 required).\nYour balance: ",
-    "process_3_4_minutes": "✅ The process will take 3–4 minutes... 20 credits spent."
+    "process_3_4_minutes": "✅ The process will take 3–4 minutes... 20 credits spent.",
+
+    "balance_notification": "✅ Your balance has been increased by {selected_package} credits!\nNow you have {new_balance} credits.",
+    "purchase_credits": "Purchase {package_num} for {package_price} stars",
+
+
+    "pay": "Pay {package_num} {currency}",
+    "check_payment": "Check payment",
+    "message_to_pay": "To pay for {package_credits} credits in {currency}, please follow the link:",
+    "succ": "✅ Payment successful! {credits_amount} credits have been added.\n💰 Your current balance: {user_credits} credits.",
+    "payment_not_found": "❌ Payment not found"
 }

@@ -25,7 +25,6 @@ with open("runpod/workflow_api.json", "r", encoding="utf-8") as f:
 
 
 async def call_runpod_api(IMAGE_PATH, image_name, user_id=None):
-    # читаем и кодируем картинку
     with open(IMAGE_PATH, "rb") as f:
         img_bytes = f.read()
     img_b64 = base64.b64encode(img_bytes).decode("utf-8")
@@ -47,9 +46,9 @@ async def call_runpod_api(IMAGE_PATH, image_name, user_id=None):
     print(f"User: {user_id} - Image {image_name} sent to runpod")
     time_start = time.time()
 
-    timeout = aiohttp.ClientTimeout(total=600)  # увеличено до 10 минут
+    timeout = aiohttp.ClientTimeout(total=600) 
     async with aiohttp.ClientSession(timeout=timeout) as session:
-        # запускаем задачу
+     
         async with session.post(URL_RUN, headers=headers, json=payload) as resp:
             start_data = await resp.json()
             job_id = start_data.get("id")
@@ -57,7 +56,7 @@ async def call_runpod_api(IMAGE_PATH, image_name, user_id=None):
                 print("Failed to get job_id:", start_data)
                 return None
 
-        # опрашиваем статус
+        
         while True:
             async with session.get(f"{URL_STATUS}/{job_id}", headers=headers) as resp:
                 status_data = await resp.json()
@@ -89,7 +88,6 @@ async def call_runpod_api(IMAGE_PATH, image_name, user_id=None):
                     print("Job failed:", status_data)
                     return None
 
-            # ждем 5 секунд между проверками
             await asyncio.sleep(5)
 
 

@@ -246,7 +246,6 @@ async def save_subscribed_user(callback: types.CallbackQuery, user_id: int) -> b
 
     with open(SUBSCRIBED_USERS_FILE, "w") as f:
         json.dump(subscribed_users, f, indent=4)
-    print(True)
 
     return True
 

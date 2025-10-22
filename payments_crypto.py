@@ -46,6 +46,9 @@ def check_invoice(invoice_id):
     return None
 
 async def handle_buy_crypto(callback: types.CallbackQuery):
+    from handlers import get_user_language
+    from handlers import get_text
+
     parts = callback.data.split("_")
     package_key = "_".join(parts[:2])  
     currency = parts[2]               
@@ -59,25 +62,54 @@ async def handle_buy_crypto(callback: types.CallbackQuery):
     if not pay_url:
         await callback.message.answer("❌ Error while creating invoice")
         return
+    
+
+
+    language = get_user_language(callback.from_user.id)
+
+    package_num = package['price']
+    pay = get_text("pay", language=language)
+
+
+    pay_formatted = pay.format(
+        package_num=package_num,
+        currency=currency
+    )
+
+    check_payment = get_text("check_payment", language=language)
+
+    package_credits = package['credits']
+    message_to_pay = get_text("message_to_pay", language=language)
+    message_to_pay_formatted = message_to_pay.format(
+        package_credits=package_credits,
+        currency=currency
+    )
+
+
 
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=f"Pay {package['price']} {currency}", url=pay_url)],
-        [InlineKeyboardButton(text="Check payment", callback_data=f"check_crypto_{invoice_id}_{package['credits']}")]
+        [InlineKeyboardButton(text=pay_formatted, url=pay_url)],
+        [InlineKeyboardButton(text=check_payment, callback_data=f"check_crypto_{invoice_id}_{package['credits']}")]
     ])
 
     await callback.message.delete()
     await callback.message.answer(
-        f"To pay for {package['credits']} credits in {currency}, please follow the link:",
+        message_to_pay_formatted,
         reply_markup=kb
     )
     await callback.answer()
 
 @router.callback_query(lambda c: c.data.startswith("check_crypto_"))
 async def check_crypto_payment(callback: types.CallbackQuery):
+    from handlers import get_user_language
+    from handlers import get_text
+
     parts = callback.data.split("_")
     invoice_id, credits_amount = parts[2], int(parts[3])
 
     status = check_invoice(invoice_id)
+    language = get_user_language(callback.from_user.id)
+
     if status and status.get("ok"):
         inv = next((i for i in status["result"]["items"] if str(i["invoice_id"]) == invoice_id), None)
         if inv and inv["status"] == "paid":
@@ -97,15 +129,24 @@ CRYPTO - {paid_amount} usdc - {BOT_NAME}
 """
             await send_message(purchase_notification)
 
+            
+            succ = get_text("succ", language=language)
+
+            success_formatted = succ.format(
+                credits_amount=credits_amount,
+                user_credits=user_credits
+            )
+
             await callback.message.delete()
             await callback.message.answer(
-                f"✅ Payment successful! {credits_amount} credits have been added.\n"
-                f"💰 Your current balance: {user_credits} credits."
+                success_formatted
             )
             await callback.answer()
             return
+        
+    payment_not_found = get_text("payment_not_found", language=language)
 
-    await callback.answer("❌ Payment not found", show_alert=True)
+    await callback.answer(payment_not_found, show_alert=True)
 
 def register_crypto_handlers(dp):
     dp.include_router(router)

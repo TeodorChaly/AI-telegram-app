@@ -1,9 +1,11 @@
 import os
 from aiogram import Router, types
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, LabeledPrice
-from function import add_credits, get_user_credits  # only functions
+from function import add_credits, get_text, get_user_credits  # only functions
 from config import PRODUCT_PRICE_STARS
 from stats.checker import *
+
+
 
 router = Router()
 
@@ -25,6 +27,7 @@ def buy_credits_keyboard() -> InlineKeyboardMarkup:
 
 @router.callback_query(lambda c: c.data in CREDIT_PACKAGES)
 async def buy_credits_callback(callback: types.CallbackQuery):
+    from handlers import get_user_language
     """Handle credit package selection"""
     package_id = callback.data
     package = CREDIT_PACKAGES[package_id]
@@ -35,10 +38,23 @@ async def buy_credits_callback(callback: types.CallbackQuery):
         await callback.message.delete()
     except Exception as e:
         pass
+    
+    language = get_user_language(callback.from_user.id)
+    text = get_text("purchase_credits", language=language)
+
+    package_num = package['name']
+    package_price = package['price']
+
+    full_text = text.format(
+        package_num=package_num,
+        package_price=package_price
+    )
+
+
     # send invoice as a new message
     await callback.message.answer_invoice(
         title=package["name"],
-        description=f"Purchase {package['name']} for {package['price']} Stars",
+        description=full_text,
         payload=package_id,
         provider_token=TELEGRAM_STARS_TOKEN,
         currency="XTR",
@@ -51,6 +67,8 @@ async def buy_credits_callback(callback: types.CallbackQuery):
 @router.pre_checkout_query()
 async def process_pre_checkout(query: types.PreCheckoutQuery):
     """Handle PreCheckoutQuery and add credits"""
+    from handlers import get_user_language
+
 
     if query.invoice_payload in CREDIT_PACKAGES:
         await query.answer(ok=True)
@@ -71,11 +89,27 @@ STARS - {package["price"] * 0.013} usd ({package["price"]} stars) - {BOT_NAME}
 """
             await send_message(purchase_notification)
             
+
+            selected_package = package['credits']
+            new_balance = new_balance
+
+
+            language = get_user_language(query.from_user.id)
+            text = get_text("balance_notification", language=language)
+
+
+            balance_notification = text
+
+
+            balance_notification_formatted = balance_notification.format(
+                selected_package=selected_package,
+                new_balance=new_balance
+            )
+
             # notify the user about new balance
             await query.bot.send_message(
                 query.from_user.id,
-                f"✅ Your balance has been increased by {package['credits']} credits! "
-                f"Now you have {new_balance} credits."
+                balance_notification_formatted
             )
 
         except Exception as e:

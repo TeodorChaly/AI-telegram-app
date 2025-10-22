@@ -7,7 +7,11 @@ PRODUCT_PRICE_CRYPTO= {
     
     "crypto_max_min": {"credits": 750, "price": "22"},
 
-    "crypto_max": {"credits": 1500, "price": "35"}
+    "crypto_max": {"credits": 1500, "price": "35"},
+
+    "crypto_super": {"credits": 5000, "price": "90"},
+
+
 }
 
 PRODUCT_PRICE_STARS = {
@@ -20,4 +24,6 @@ PRODUCT_PRICE_STARS = {
     "pack_max_min": {"name": "750 credits - 25$", "price": 1500, "credits": 750},
 
     "pack_max": {"name": "1500 credits - 40$", "price": 2500, "credits": 1500},
+    
+    "pack_super": {"name": "5000 credits - 99$", "price": 6000, "credits": 5000},
 }

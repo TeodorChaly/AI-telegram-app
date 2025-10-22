@@ -4,7 +4,7 @@
   "credits_selection":"💰 Meine Credits anzeigen",
   "language_selection":"🌐 Sprache",
   "back_to_menu_selection":"⬅️ Zurück zum Menü",
-  "pay_stars_section":"⭐ Mit Sternen bezahlen",
+  "pay_stars_section":"⭐ Mit Karte bezahlen (TG STARS)",
   "pay_crypto_section":"💰 Mit Krypto bezahlen (🔥 -10%)",
   "pay_usdc": "Mit USDC 🔵 bezahlen",
   "pay_usdt": "Mit USDT 🟢 bezahlen",
@@ -53,5 +53,14 @@
   "video_effect": "Bitte wählen Sie einen Videoeffekt, der auf Ihr Foto angewendet werden soll:",
 
   "balance_not_enough_20": "⚠️ Sie haben nicht genügend Credits (20 erforderlich).\nIhr Guthaben: ",
-  "process_3_4_minutes": "✅ Der Vorgang dauert 3–4 Minuten... 20 Credits ausgegeben."
+  "process_3_4_minutes": "✅ Der Vorgang dauert 3–4 Minuten... 20 Credits ausgegeben.",
+
+  "balance_notification": "✅ Ihr Guthaben wurde um {selected_package} Credits erhöht!\nSie haben jetzt {new_balance} Credits.",
+  "purchase_credits": "Kaufen Sie {package_num} für {package_price} Sterne",
+
+  "pay": "{package_num} {currency} bezahlen",
+  "check_payment": "Zahlung prüfen",
+  "message_to_pay": "Um {package_credits} Credits in {currency} zu bezahlen, folge bitte dem Link:",
+  "succ": "✅ Zahlung erfolgreich! {credits_amount} Credits wurden hinzugefügt.\n💰 Dein aktuelles Guthaben: {user_credits} Credits.",
+  "payment_not_found": "❌ Zahlung nicht gefunden"
 }

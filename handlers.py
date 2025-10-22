@@ -232,13 +232,15 @@ def register_handlers(dp: Dispatcher, bot: Bot):
         if not is_user_agreed(user_id):
             await send_user_agreement(message)
             return
+        
+
         if message.text is not None:
-            selected_flag = message.text.strip() 
+            selected_text = message.text.strip()
 
             from keyboards import languages_dict
 
-            if selected_flag in languages_dict:
-                selected_lang = languages_dict[selected_flag]
+            if selected_text in languages_dict:
+                selected_lang = languages_dict[selected_text]
                 update_user(user_id=user_id, original_language=selected_lang)
                 await state.set_state(UserStates.MAIN_MENU)
                 await message.answer(

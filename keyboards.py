@@ -9,9 +9,9 @@ languages = ["en", "ru", "de"]
 
 
 languages_dict = {
-    "🇬🇧": "en",
-    "🇷🇺": "ru",
-    "🇩🇪": "de"
+    "🇬🇧 EN": "en",
+    "🇷🇺 RU": "ru",
+    "🇩🇪 DE": "de",
 }
 
 def get_section(section):
@@ -61,10 +61,11 @@ def main_menu(language):
 
 
 def language_change():
-    keyboard = [
-        [KeyboardButton(text=flag) for flag in list(languages_dict.keys())[:2]],  
-        [KeyboardButton(text=list(languages_dict.keys())[2])] 
-    ]
+
+    buttons = [KeyboardButton(text=key) for key in languages_dict.keys()]
+    
+    keyboard = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
+    
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
 
 
