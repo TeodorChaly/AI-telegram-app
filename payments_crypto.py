@@ -20,7 +20,7 @@ def buy_credits_crypto_keyboard(currency="USDC"):
     keyboard = []
     for key, pkg in CREDIT_PACKAGES_CRYPTO.items():
         btn = InlineKeyboardButton(
-            text=f"{pkg['credits']} credits - {pkg['price']} {currency}",
+            text=f"{pkg['credits']} credits - {pkg['price']} {currency} (-20% 🔥)",
             callback_data=f"{key}_{currency}"
         )
         keyboard.append([btn])
