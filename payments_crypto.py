@@ -6,6 +6,7 @@ from handlers import add_credits, get_user_credits
 from logs import log_message
 from config import PRODUCT_PRICE_CRYPTO
 from stats.checker import *
+from google_sheets import *
 
 router = Router()
 
@@ -20,7 +21,7 @@ def buy_credits_crypto_keyboard(currency="USDC"):
     keyboard = []
     for key, pkg in CREDIT_PACKAGES_CRYPTO.items():
         btn = InlineKeyboardButton(
-            text=f"{pkg['credits']} credits - {pkg['price']} {currency} (-20% 🔥)",
+            text=f"{pkg['credits']} credits - {pkg['price']} {currency}",
             callback_data=f"{key}_{currency}"
         )
         keyboard.append([btn])
@@ -125,9 +126,10 @@ async def check_crypto_payment(callback: types.CallbackQuery):
             BOT_NAME = os.getenv("BOT_NAME")
 
             purchase_notification = f"""
-CRYPTO - {paid_amount} usdc - {BOT_NAME}
+CRYPTO - {paid_amount} usdc - {BOT_NAME} from @{callback.from_user.username}
 """
             await send_message(purchase_notification)
+            await update_google_sheet(paid_amount) 
 
             
             succ = get_text("succ", language=language)

@@ -1,5 +1,6 @@
 # handlers.py
 from email.mime import message
+from logging.handlers import SMTPHandler
 import math
 import os
 import time
@@ -7,7 +8,7 @@ import asyncio
 import random
 import string
 import json
-from aiogram import Bot, Dispatcher, types
+from aiogram import F, Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
@@ -20,6 +21,7 @@ from runpod.call_runpod_video import call_runpod_api_video
 from payments_stars import router as payments_router, buy_credits_keyboard
 from logs import log_message
 from payments_crypto import register_crypto_handlers, buy_credits_crypto_keyboard
+from google_sheets import *
 from keyboards import *
 from dotenv import load_dotenv
 from stats.checker import *
@@ -207,6 +209,39 @@ def register_handlers(dp: Dispatcher, bot: Bot):
                 await callback.answer(cancel, show_alert=True)
         except Exception:
             await callback.answer(cancel, show_alert=True)
+
+    @dp.message(F.successful_payment)
+    async def handle_successful_payment(message: types.Message):
+        payment = message.successful_payment
+        user_id = message.from_user.id
+        package_id = payment.invoice_payload
+
+        if package_id not in CREDIT_PACKAGES:
+            await message.answer("❌ Error: unsupported package")
+            return
+
+        package = CREDIT_PACKAGES[package_id]
+        credits_to_add = package.get("credits", 0)
+        add_credits(user_id, credits_to_add)
+
+        BOT_NAME = os.getenv("BOT_NAME")
+        purchase_notification = f"""
+STARS - {package["price"] * 0.013} usd ({package["price"]} stars) - {BOT_NAME} from @{message.from_user.username}
+"""
+        await send_message(purchase_notification)
+        await update_google_sheet(package["price"] * 0.013) 
+
+
+        language = get_user_language(user_id)
+        text_template = get_text("balance_notification", language=language)
+
+        new_balance = get_user_credits(message.from_user.id)
+        selected_package = package['credits']
+        success_text = text_template.format(selected_package=selected_package, new_balance=new_balance)
+        balance = get_user_credits(user_id)
+
+        await message.answer(f"{success_text}\n\nCurrent balance: {balance}⭐️")
+
 
     # ===== GLOBAL HANDLER FOR TEXT BUTTONS =====
     @dp.message()

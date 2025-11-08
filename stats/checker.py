@@ -1,10 +1,13 @@
 import os
 import asyncio
 import json
+import sys
 from dotenv import load_dotenv
 from pathlib import Path
 import requests
 from datetime import datetime
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from google_sheets import *
 
 env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
@@ -74,11 +77,16 @@ async def process_data(data):
     else:
         conversion_rate_rounded = 0
 
+
+
+    total_usd = await get_total_sum_for_date(today)
+
         
     text_of_message = f"""
 From {TG_BOT_NAME}
 
 Stats for {today}
+Total earned: {total_usd}
 New users: {data["new_users_today"]},
 Total subscribed to channel: {data["subscribed"]},
 Total photo sended: {data["sended_photo"]},

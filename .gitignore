@@ -14,3 +14,4 @@ stats/stats.json
 videos/*
 subscribed_users.json
 bot.db
+google_key.json

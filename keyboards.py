@@ -89,13 +89,13 @@ def send_photo_menu(language):
 def buy_credits_reply_menu(language):
     from handlers import get_text
 
-    # pay_stars = get_text("pay_stars_section", language=language)
+    pay_stars = get_text("pay_stars_section", language=language)
     pay_crypto = get_text("pay_crypto_section", language=language)
     back_to_menu = get_text("back_to_menu_selection", language=language)
 
     buy_credits_reply_menu = ReplyKeyboardMarkup(
         keyboard=[
-            [ KeyboardButton(text=pay_crypto)], # KeyboardButton(text=pay_stars)
+            [KeyboardButton(text=pay_stars), KeyboardButton(text=pay_crypto)],
             [KeyboardButton(text=back_to_menu)]
         ],
         resize_keyboard=True
