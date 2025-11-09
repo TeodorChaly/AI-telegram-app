@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 import requests
 from datetime import datetime
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+sys.path.append(str(Path(__file__).parent.parent))
 from google_sheets import *
 
 env_path = Path(__file__).parent.parent / ".env"
