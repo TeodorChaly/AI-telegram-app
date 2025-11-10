@@ -60,6 +60,7 @@ async def handle_buy_crypto(callback: types.CallbackQuery):
         return
 
     pay_url, invoice_id = create_invoice(package["price"], currency=currency)
+    print(pay_url)
     if not pay_url:
         await callback.message.answer("❌ Error while creating invoice")
         return

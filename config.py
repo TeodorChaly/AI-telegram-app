@@ -1,11 +1,11 @@
 PRODUCT_PRICE_CRYPTO= {
     "crypto_min": {"credits": 30, "price": "2"},
     
-    "crypto_min_max": {"credits": 130, "price": "6"},
+    "crypto_minmax": {"credits": 130, "price": "6"},
     
     "crypto_avg": {"credits": 330, "price": "13"},
     
-    "crypto_max_min": {"credits": 750, "price": "22"},
+    "crypto_maxmin": {"credits": 750, "price": "22"},
 
     "crypto_max": {"credits": 1500, "price": "35"},
 
