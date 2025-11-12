@@ -231,6 +231,8 @@ STARS - {package["price"] * 0.013} usd ({package["price"]} stars) - {BOT_NAME} f
         await send_message(purchase_notification)
         await update_google_sheet(package["price"] * 0.013) 
 
+        await add_value("bought_stars")
+        await add_value("amount_stars", package["price"])
 
         language = get_user_language(user_id)
         text_template = get_text("balance_notification", language=language)
