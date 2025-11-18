@@ -27,11 +27,13 @@ async def send_to_user(bot, chat_id):
 
             photo1 = FSInputFile(relative_path + "/videos/message_tits.mp4")
             photo2 = FSInputFile(relative_path + "/videos/panties_down.mp4")
+            photo3 = FSInputFile(relative_path + "/videos/foot_fetish.mp4")
 
             media = [
                 InputMediaVideo(media=photo1, caption="""Good news! We have 3 new videos for you 🔥🔥🔥
 Try it yourself 👇""", parse_mode="HTML"),
-                InputMediaVideo(media=photo2)
+                InputMediaVideo(media=photo2),
+                InputMediaVideo(media=photo3)
             ]
 
             await bot.send_media_group(chat_id=chat_id, media=media)

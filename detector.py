@@ -41,11 +41,7 @@ def detect_minor_file(image_path: str):
     data = response.json()
 
     if "faces" not in data or len(data["faces"]) == 0:
-        return {
-            "status": "no_face",
-            "faces": [],
-            "raw": data
-        }
+        return False
 
     results = []
     for face in data["faces"]:
