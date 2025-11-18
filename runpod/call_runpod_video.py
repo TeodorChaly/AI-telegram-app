@@ -55,6 +55,7 @@ async def call_runpod_api_video(IMAGE_PATH, image_name, user_id=None, effect=Non
         workflow["142"]["inputs"]["lora_name"] = prompts["effect4"]["lora_name_2"]
 
     elif effect == "effect5":
+        print("tittydrop")
         workflow["6"]["inputs"]["text"] = prompts["effect5"]["text"]
         workflow["141"]["inputs"]["lora_name"] = prompts["effect5"]["lora_name"]
         workflow["142"]["inputs"]["lora_name"] = prompts["effect5"]["lora_name"]
@@ -63,6 +64,21 @@ async def call_runpod_api_video(IMAGE_PATH, image_name, user_id=None, effect=Non
         workflow["6"]["inputs"]["text"] = prompts["effect6"]["text"]
         workflow["141"]["inputs"]["lora_name"] = prompts["effect6"]["lora_name"]
         workflow["142"]["inputs"]["lora_name"] = prompts["effect6"]["lora_name"]
+
+    elif effect == "effect7":
+        workflow["6"]["inputs"]["text"] = prompts["effect7"]["text"]
+        workflow["141"]["inputs"]["lora_name"] = prompts["effect7"]["lora_name"]
+        workflow["142"]["inputs"]["lora_name"] = prompts["effect7"]["lora_name"]
+
+    elif effect == "effect8":
+        workflow["6"]["inputs"]["text"] = prompts["effect8"]["text"]
+        workflow["141"]["inputs"]["lora_name"] = prompts["effect8"]["lora_name"]
+        workflow["142"]["inputs"]["lora_name"] = prompts["effect8"]["lora_name"]
+
+    elif effect == "effect9":
+        workflow["6"]["inputs"]["text"] = prompts["effect9"]["text"]
+        workflow["141"]["inputs"]["lora_name"] = prompts["effect9"]["lora_name"]
+        workflow["142"]["inputs"]["lora_name"] = prompts["effect9"]["lora_name"]
         
 
     workflow["122"]["inputs"]["image"] = image_name

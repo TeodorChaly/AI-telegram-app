@@ -33,7 +33,7 @@
     "crypto_to_pay": "Choose cryptocurrency to pay with:",
     "pay_currecny": "Pay with {currency} via CryptoBot:",
     "photo": "Photo (10 credits)",
-    "video": "Video (20 credits) - New 🔥",
+    "video": "Video (20 credits) 🔥",
     "process_photo_options": "Choose how you want to process the file:",
     "got_your_image": "✅ Got your image. Choose how you want to process the photo:",
     "not_an_image": "❌ This document is not an image.",
@@ -44,12 +44,19 @@
     "could_not_spend_credits": "⚠️ Could not spend credits. Try again later.",
     "process_time": "✅ The process will take 30–40 seconds... 10 credits spent.",
     "error_processing_image": "❌ Error processing the image.",
-    "effect_undress": "Undress 🔥",
-    "effect_cloth_off_trend": "Cloth off trend 🔥",
+    "effect_undress": "Undress",
+    "effect_cloth_off_trend": "Cloth off trend",
     "effect_rip_her_clothes": "Rip her clothes",
     "effect_touch_boobs": "Touch Boobs",
     "effect_titty_drop": "Titty drop",
     "effect_breast_play": "Breast play",
+
+    "effect_man_behind": "Massage tits 🔥",
+    "effect_foot_fetish": "Foot fetish 🔥",
+    "effect_panties_down": "Panties down 🔥",
+
+    "content_restricted": " 🚫 Content rejected due to our policy",
+
     "video_effect": "Please select a video effect to apply to your photo:",
 
     "balance_not_enough_20": "⚠️ You don't have enough credits (20 required).\nYour balance: ",
@@ -57,7 +64,6 @@
 
     "balance_notification": "✅ Your balance has been increased by {selected_package} credits!\nNow you have {new_balance} credits.",
     "purchase_credits": "Purchase {package_num} for {package_price} stars",
-
 
     "pay": "Pay {package_num} {currency}",
     "check_payment": "Check payment",

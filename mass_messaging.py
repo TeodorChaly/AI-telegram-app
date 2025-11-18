@@ -7,7 +7,7 @@ import os
 from aiogram import Bot
 from dotenv import load_dotenv
 from aiogram import Bot
-from aiogram.types import FSInputFile,InputMediaPhoto
+from aiogram.types import FSInputFile,InputMediaPhoto, InputMediaVideo
 import sys
 
 load_dotenv()
@@ -19,21 +19,19 @@ API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 async def send_to_user(bot, chat_id):
 
     attempt = 0
-    max_retries = 5
+    max_retries = 0
 
     while attempt <= max_retries:
         try:
             relative_path = os.getenv("RELATIVE_PATH")
 
-            from aiogram.types import FSInputFile,InputMediaPhoto
-            
-            photo1 = FSInputFile(relative_path + "videos/girl1.jpg")
-            photo2 = FSInputFile(relative_path + "videos/girl2.jpg")
+            photo1 = FSInputFile(relative_path + "/videos/message_tits.mp4")
+            photo2 = FSInputFile(relative_path + "/videos/panties_down.mp4")
 
             media = [
-                InputMediaPhoto(media=photo1, caption="""🔞 It's time to undress me - upload a photo for see me without cloth!
-Try and see for yourself 👇""", parse_mode="HTML"),
-                InputMediaPhoto(media=photo2)
+                InputMediaVideo(media=photo1, caption="""Good news! We have 3 new videos for you 🔥🔥🔥
+Try it yourself 👇""", parse_mode="HTML"),
+                InputMediaVideo(media=photo2)
             ]
 
             await bot.send_media_group(chat_id=chat_id, media=media)
@@ -41,7 +39,7 @@ Try and see for yourself 👇""", parse_mode="HTML"),
 
             return {"ok": True}
         except Exception as e:
-            print(f"Error: {e}")
+            # print(f"Error: {e}")
             attempt += 1
                  
     return {"ok": False}
@@ -56,13 +54,17 @@ async def run_production(bot):
 
     chat_ids = [int(cid) for cid in data.keys()]
 
+    counter = 0
+
     for chat_id in chat_ids:
-        print(chat_id)
+        counter += 1
+        print(f"User number {counter} from {len(chat_ids)}")
         result = await send_to_user(bot, chat_id)
         if result["ok"]:
-            print(f"Sent to {chat_id}.")
+            print(f"{chat_id} - message sended")
         else:
-            print(f"Failed to {chat_id}")
+            print(f"{chat_id} - failed to send message")
+
 
 
 
@@ -77,12 +79,12 @@ async def test_message(bot):
     print("Production users will be sended:", len(data))
 
     for chat_id in chat_ids:
-        print(chat_id)
+        # print(chat_id)
         result = await send_to_user(bot, chat_id)
         if result["ok"]:
-            print(f"Sent to {chat_id}.")
+            print(f"{chat_id} - message sended")
         else:
-            print(f"Failed to {chat_id}")
+            print(f"{chat_id} - failed to send message")
 
 
 

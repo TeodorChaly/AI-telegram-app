@@ -27,6 +27,7 @@ from dotenv import load_dotenv
 from stats.checker import *
 from aiogram.types import InputMediaVideo
 from database import *
+from detector import detect_minor_file
 
 load_dotenv()
 
@@ -447,7 +448,14 @@ STARS - {package["price"] * 0.013} usd ({package["price"]} stars) - {BOT_NAME} f
         effect_touch_boobs = get_text("effect_touch_boobs", language=language)
         effect_titty_drop = get_text("effect_titty_drop", language=language)
         effect_breast_play = get_text("effect_breast_play", language=language)
+
+        effect_man_behind = get_text("effect_man_behind", language=language)
+        effect_foot_fetish = get_text("effect_foot_fetish", language=language)
+        effect_panties_down = get_text("effect_panties_down", language=language)
+
         video_effect = get_text("video_effect", language=language)
+
+        content_restricted = get_text("content_restricted", language=language)
 
         user_id = callback.from_user.id
         data = callback.data
@@ -525,6 +533,25 @@ STARS - {package["price"] * 0.013} usd ({package["price"]} stars) - {BOT_NAME} f
             status_message = await callback.message.answer(
     process_time
 )
+
+            minor_detected = detect_minor_file(file_path)
+            if minor_detected:
+                print("Minor content detected in photo request")
+                try:
+                    await status_message.delete()
+                except Exception:
+                    pass  
+
+                try:
+                    os.remove(file_path)       
+                except Exception as e:
+                    print(f"Error while deleting: {e}")
+
+                await callback.message.answer(content_restricted)
+                add_credits(user_id, 10)
+                return
+            
+
             processed_image = await call_runpod_api(IMAGE_PATH=file_path, image_name=file_name, user_id=user_id)
 
             if processed_image:
@@ -569,6 +596,9 @@ STARS - {package["price"] * 0.013} usd ({package["price"]} stars) - {BOT_NAME} f
                 InputMediaVideo(media=FSInputFile(relative_path+ "/videos/touchboobies.mp4")),
                 InputMediaVideo(media=FSInputFile(relative_path+ "/videos/TITTYDROP.mp4")),
                 InputMediaVideo(media=FSInputFile(relative_path+ "/videos/breast_play.mp4")),
+                InputMediaVideo(media=FSInputFile(relative_path+ "/videos/foot_fetish.mp4")),
+                InputMediaVideo(media=FSInputFile(relative_path+ "/videos/message_tits.mp4")),
+                InputMediaVideo(media=FSInputFile(relative_path+ "/videos/panties_down.mp4")),
             ]
 
             sent_videos = await bot.send_media_group(chat_id=callback.from_user.id, media=media)
@@ -578,7 +608,9 @@ STARS - {package["price"] * 0.013} usd ({package["price"]} stars) - {BOT_NAME} f
             effects_keyboard = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text=effect_undress, callback_data=f"video_effect:effect1:{file_path}"), InlineKeyboardButton(text=effect_cloth_off_trend, callback_data=f"video_effect:effect2:{file_path}")],
                 [InlineKeyboardButton(text=effect_rip_her_clothes, callback_data=f"video_effect:effect3:{file_path}"), InlineKeyboardButton(text=effect_touch_boobs, callback_data=f"video_effect:effect4:{file_path}")],
-                [InlineKeyboardButton(text=effect_titty_drop, callback_data=f"video_effect:effect5:{file_path}"), InlineKeyboardButton(text=effect_breast_play, callback_data=f"video_effect:effect6:{file_path}")]
+                [InlineKeyboardButton(text=effect_titty_drop, callback_data=f"video_effect:effect5:{file_path}"), InlineKeyboardButton(text=effect_breast_play, callback_data=f"video_effect:effect6:{file_path}")],
+                [InlineKeyboardButton(text=effect_man_behind, callback_data=f"video_effect:effect7:{file_path}"), InlineKeyboardButton(text=effect_foot_fetish, callback_data=f"video_effect:effect8:{file_path}")],
+                [InlineKeyboardButton(text=effect_panties_down, callback_data=f"video_effect:effect9:{file_path}")]
             ])
             await callback.message.answer(video_effect, reply_markup=effects_keyboard)
 
@@ -617,9 +649,10 @@ STARS - {package["price"] * 0.013} usd ({package["price"]} stars) - {BOT_NAME} f
         process_3_4_minutes = get_text("process_3_4_minutes", language=language)
         error_processing_image = get_text("error_processing_image", language=language)
 
+        content_restricted = get_text("content_restricted", language=language)
+
         user_credits = get_user_credits(user_id)
         if user_credits < 20:
-                
                 buy_credits_inline = InlineKeyboardMarkup(inline_keyboard=[
                     [InlineKeyboardButton(text=buy_credits, callback_data="pay_credits")]
                 ])
@@ -652,6 +685,21 @@ STARS - {package["price"] * 0.013} usd ({package["price"]} stars) - {BOT_NAME} f
                 except Exception:
                     pass
             del user_video_messages[user_id]
+
+        
+
+
+        minor_detected = detect_minor_file(file_path)
+        if minor_detected:
+                print("Minor content detected in video request")
+                await callback.message.answer(content_restricted)
+                add_credits(user_id, 20)
+                try:
+                    os.remove(file_path)       
+                except Exception as e:
+                    print(f"Error while deleting: {e}")
+                return
+        
 
         time_start = time.time()
 
